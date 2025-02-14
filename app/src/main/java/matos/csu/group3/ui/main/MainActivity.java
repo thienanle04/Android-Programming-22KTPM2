@@ -1,4 +1,4 @@
-package matos.csu.group3;
+package matos.csu.group3.ui.main;
 
 import android.os.Bundle;
 
@@ -7,6 +7,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+
+import matos.csu.group3.R;
 
 public class MainActivity extends AppCompatActivity {
 
