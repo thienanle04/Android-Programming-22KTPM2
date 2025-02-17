@@ -2,9 +2,10 @@ package matos.csu.group3.data.local.entity;
 
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
+import java.io.Serializable;
 
 @Entity(tableName = "photos")
-public class PhotoEntity {
+public class PhotoEntity implements Serializable{
 
     @PrimaryKey(autoGenerate = true)
     private int id;

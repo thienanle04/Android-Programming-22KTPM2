@@ -1,5 +1,7 @@
 package matos.csu.group3.ui.main;
 
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import androidx.activity.ComponentActivity;
 import androidx.lifecycle.ViewModelProvider;
@@ -11,6 +13,7 @@ import java.util.List;
 import matos.csu.group3.R;
 import matos.csu.group3.data.local.entity.PhotoEntity;
 import matos.csu.group3.ui.adapter.PhotoAdapter;
+import matos.csu.group3.ui.editor.CropActivity;
 import matos.csu.group3.viewmodel.PhotoViewModel;
 
 public class MainActivity extends ComponentActivity implements PhotoAdapter.OnItemClickListener {
@@ -61,6 +64,15 @@ public class MainActivity extends ComponentActivity implements PhotoAdapter.OnIt
     public void onItemClick(PhotoEntity photo) {
         // Handle item click events here
         // For example, open a detailed view of the photo
+
+        Intent cropIntent = new Intent(this, CropActivity.class);
+
+        Uri photoUri = Uri.parse(photo.getFilePath());
+        cropIntent.setData(photoUri);
+
+        cropIntent.putExtra("photoEntity", (CharSequence) photo);
+
+        startActivity(cropIntent);
     }
 
     // Method to filter photos based on search query
