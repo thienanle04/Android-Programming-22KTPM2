@@ -11,19 +11,26 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 
+import java.util.List;
+
 import matos.csu.group3.R;
 import matos.csu.group3.data.local.entity.PhotoEntity;
 
-import java.util.List;
-
 public class PhotoAdapter extends RecyclerView.Adapter<PhotoAdapter.PhotoViewHolder> {
 
-    private final List<PhotoEntity> photos;  // List of photos
+    private List<PhotoEntity> photos;  // List of photos (no longer final)
     private final OnItemClickListener listener;  // Listener for item click events
 
     public PhotoAdapter(List<PhotoEntity> photos, OnItemClickListener listener) {
         this.photos = photos;
         this.listener = listener;
+    }
+
+    // Method to update the photos list
+    public void setPhotos(List<PhotoEntity> photos) {
+        this.photos.clear(); // Clear the existing list
+        this.photos.addAll(photos); // Add the new items
+        notifyDataSetChanged(); // Notify the adapter that the data has changed
     }
 
     @NonNull
@@ -54,7 +61,7 @@ public class PhotoAdapter extends RecyclerView.Adapter<PhotoAdapter.PhotoViewHol
 
     @Override
     public int getItemCount() {
-        return photos != null ? photos.size() : 0;
+        return photos.size(); // No need for null check, as photos is initialized in the constructor
     }
 
     // ViewHolder for individual photo items
