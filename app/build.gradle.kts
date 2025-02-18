@@ -8,7 +8,7 @@ android {
 
     defaultConfig {
         applicationId = "matos.csu.group3"
-        minSdk = 33
+        minSdk = 30
         this.targetSdk = 35
         versionCode = 1
         versionName = "1.0"
