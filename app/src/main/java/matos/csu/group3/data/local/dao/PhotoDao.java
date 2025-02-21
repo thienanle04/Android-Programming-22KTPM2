@@ -4,6 +4,7 @@ import androidx.lifecycle.LiveData;
 import androidx.room.Dao;
 import androidx.room.Delete;
 import androidx.room.Insert;
+import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
 import androidx.room.Update;
 
@@ -19,8 +20,8 @@ public interface PhotoDao {
     void insert(PhotoEntity photoEntity);
 
     // Insert multiple photos
-    @Insert
-    void insertAll(List<PhotoEntity> photoEntities);
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    void insertPhotos(List<PhotoEntity> photoEntities);
 
     // Update an existing photo
     @Update
@@ -31,7 +32,7 @@ public interface PhotoDao {
     void delete(PhotoEntity photoEntity);
 
     // Get all photos
-    @Query("SELECT * FROM photos")
+    @Query("SELECT * FROM photos ORDER BY id DESC")
     LiveData<List<PhotoEntity>> getAllPhotos();
 
     // Get a photo by ID
