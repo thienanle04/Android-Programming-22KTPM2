@@ -52,9 +52,6 @@ public class PhotoAdapter extends RecyclerView.Adapter<PhotoAdapter.PhotoViewHol
                 .load(currentPhoto.getFilePath())  // Photo file path
                 .into(holder.imageView);
 
-        // Set the name of the photo (optional)
-        holder.textView.setText(currentPhoto.getName());
-
         // Handle click event on the photo item
         holder.itemView.setOnClickListener(v -> listener.onItemClick(currentPhoto));
     }
@@ -67,12 +64,10 @@ public class PhotoAdapter extends RecyclerView.Adapter<PhotoAdapter.PhotoViewHol
     // ViewHolder for individual photo items
     public static class PhotoViewHolder extends RecyclerView.ViewHolder {
         private final ImageView imageView;
-        private final TextView textView;
 
         public PhotoViewHolder(View itemView) {
             super(itemView);
             imageView = itemView.findViewById(R.id.image_view);
-            textView = itemView.findViewById(R.id.text_view_name);
         }
     }
 

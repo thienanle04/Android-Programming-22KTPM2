@@ -21,8 +21,8 @@
         android:icon="@drawable/ic_location" />
     <item
         android:id="@+id/menu_album"
-        android:title="Album"
-        android:icon="@drawable/ic_album" />
+        android:title="Album chia sẻ"
+        android:icon="@drawable/ic_album_share" />
     <item
         android:id="@+id/menu_trash"
         android:title="Thùng rác"
@@ -31,8 +31,4 @@
         android:id="@+id/menu_settings"
         android:title="Cài đặt"
         android:icon="@drawable/ic_settings" />
-    <item
-        android:id="@+id/menu_share"
-        android:title="Chia sẻ"
-        android:icon="@drawable/ic_share" />
 </menu>
