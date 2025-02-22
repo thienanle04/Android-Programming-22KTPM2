@@ -1,0 +1,89 @@
+<!-- custom_popup_menu.xml -->
+<GridLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:columnCount="4"
+    android:padding="16dp">
+
+    <!-- Các mục menu -->
+    <ImageView
+        android:id="@+id/menu_video"
+        android:src="@drawable/ic_video"
+        android:contentDescription="Video"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_rowSpan="1"
+        android:layout_columnSpan="1"
+        android:gravity="center"/>
+
+    <ImageView
+        android:id="@+id/menu_favorite"
+        android:src="@drawable/ic_favorite"
+        android:contentDescription="Yêu thích"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_rowSpan="1"
+        android:layout_columnSpan="1"
+        android:gravity="center"/>
+
+    <ImageView
+        android:id="@+id/menu_recent"
+        android:src="@drawable/ic_recent"
+        android:contentDescription="Gần đây"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_rowSpan="1"
+        android:layout_columnSpan="1"
+        android:gravity="center"/>
+
+    <ImageView
+        android:id="@+id/menu_suggest"
+        android:src="@drawable/ic_suggest"
+        android:contentDescription="Đề xuất"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_rowSpan="1"
+        android:layout_columnSpan="1"
+        android:gravity="center"/>
+
+    <ImageView
+        android:id="@+id/menu_location"
+        android:src="@drawable/ic_location"
+        android:contentDescription="Vị trí"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_rowSpan="1"
+        android:layout_columnSpan="1"
+        android:gravity="center"/>
+
+    <ImageView
+        android:id="@+id/menu_album"
+        android:src="@drawable/ic_album_share"
+        android:contentDescription="Album chia sẻ"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_rowSpan="1"
+        android:layout_columnSpan="1"
+        android:gravity="center"/>
+
+    <ImageView
+        android:id="@+id/menu_trash"
+        android:src="@drawable/ic_trash"
+        android:contentDescription="Thùng rác"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_rowSpan="1"
+        android:layout_columnSpan="1"
+        android:gravity="center"/>
+
+    <ImageView
+        android:id="@+id/menu_settings"
+        android:src="@drawable/ic_settings"
+        android:contentDescription="Cài đặt"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_rowSpan="1"
+        android:layout_columnSpan="1"
+        android:gravity="center"/>
+
+</GridLayout>

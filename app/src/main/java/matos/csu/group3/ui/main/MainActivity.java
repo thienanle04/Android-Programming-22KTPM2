@@ -13,6 +13,7 @@ import androidx.core.content.ContextCompat;
 import androidx.lifecycle.Observer;
 import androidx.annotation.NonNull;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.view.MenuItem;
@@ -75,6 +76,8 @@ public class MainActivity extends ComponentActivity implements PhotoAdapter.OnIt
         photoAdapter = new PhotoAdapter(new ArrayList<>(), photo -> {
             // Handle item click events here
         });
+        GridLayoutManager layoutManager = new GridLayoutManager(this, 3); // 3 ảnh mỗi hàng
+        photoRecyclerView.setLayoutManager(layoutManager);
         photoRecyclerView.setAdapter(photoAdapter);
 
         // Initialize ViewModel
