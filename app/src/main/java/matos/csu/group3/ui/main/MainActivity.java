@@ -59,78 +59,24 @@ public class MainActivity extends ComponentActivity implements PhotoAdapter.OnIt
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Check for permissions using ActivityResultContracts
+        // Khởi tạo các view và RecyclerView
+        initializeViews();
+
+        // Kiểm tra và yêu cầu quyền truy cập
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (checkSelfPermission(Manifest.permission.READ_MEDIA_IMAGES) == PackageManager.PERMISSION_GRANTED) {
-                loadPhotos(); // Permission granted, load photos
+                loadPhotos();
             } else {
                 requestPermissionLauncher.launch(Manifest.permission.READ_MEDIA_IMAGES);
             }
         } else {
-            // For older versions, handle `READ_EXTERNAL_STORAGE` permission
             if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
                 loadPhotos();
             } else {
                 requestPermissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE);
             }
         }
-
-
-        // Initialize RecyclerView and adapter
-        initializeRecyclerView();
-
-        // Initialize ViewModel
-        photoViewModel = new ViewModelProvider(this).get(PhotoViewModel.class);
-
-        // Observe LiveData from ViewModel
-        photoViewModel.getAllPhotos().observe(this, new Observer<List<PhotoEntity>>() {
-            @Override
-            public void onChanged(List<PhotoEntity> photoEntities) {
-                // Update the full list of photos
-                allPhotos = photoEntities;
-                // Update the adapter with the latest photos
-                photoAdapter.setPhotos(photoEntities);
-            }
-        });
-
-        // Initialize SearchView
-        EditText searchEditText = findViewById(R.id.search_src_text);
-        ImageView searchIcon = findViewById(R.id.search_mag_icon);
-        searchIcon.setOnClickListener(v -> {
-            String query = searchEditText.getText().toString();
-            filterPhotos(query); // Gọi phương thức tìm kiếm
-        });
-
-        searchEditText.setOnEditorActionListener((v, actionId, event) -> {
-            String query = searchEditText.getText().toString();
-            filterPhotos(query); // Gọi phương thức tìm kiếm
-            return true; // Trả về true để xác nhận sự kiện đã được xử lý
-        });
-
-        // Khởi tạo BottomNavigationView
-        BottomNavigationView bottomNavigationView = findViewById(R.id.bottomNavigationView);
-
-        // Xử lý sự kiện khi chọn một mục trong BottomNavigationView
-        bottomNavigationView.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener() {
-            @Override
-            public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-                int id = item.getItemId();
-
-                if (id == R.id.nav_photos) {
-                    // Xử lý khi chọn "Ảnh"
-                    return true;
-                } else if (id == R.id.nav_albums) {
-                    // Xử lý khi chọn "Album"
-                    return true;
-                } else if (id == R.id.nav_menu) {
-                    // Khi nhấn vào "Menu", hiển thị PopupMenu
-                    showPopupMenu(bottomNavigationView); // Sử dụng BottomNavigationView làm anchor view
-                    return true;
-                }
-
-                return false;
-            }
-        });    }
+    }
 
     @Override
     public void onItemClick(PhotoEntity photo) {
@@ -241,9 +187,61 @@ public class MainActivity extends ComponentActivity implements PhotoAdapter.OnIt
 
         // Xử lý sự kiện nút "GO BACK"
         btnSoloBack.setOnClickListener(v -> {
-            // Quay lại layout chính (GridView hoặc RecyclerView)
-            setContentView(R.layout.activity_main); // Thay thế bằng layout chính của bạn
-            initializeRecyclerView(); // Khởi tạo lại RecyclerView hoặc GridView
+            // Quay lại layout chính (activity_main)
+            setContentView(R.layout.activity_main);
+
+            // Khởi tạo lại các view và RecyclerView
+            initializeViews();
+        });
+    }
+    private void initializeViews() {
+        // Khởi tạo lại RecyclerView và các view khác
+        initializeRecyclerView();
+
+        // Khởi tạo lại ViewModel và quan sát dữ liệu
+        photoViewModel = new ViewModelProvider(this).get(PhotoViewModel.class);
+        photoViewModel.getAllPhotos().observe(this, new Observer<List<PhotoEntity>>() {
+            @Override
+            public void onChanged(List<PhotoEntity> photoEntities) {
+                // Update the full list of photos
+                allPhotos = photoEntities;
+                // Update the adapter with the latest photos
+                photoAdapter.setPhotos(photoEntities);
+            }
+        });
+
+        // Khởi tạo lại SearchView và các sự kiện liên quan
+        EditText searchEditText = findViewById(R.id.search_src_text);
+        ImageView searchIcon = findViewById(R.id.search_mag_icon);
+        searchIcon.setOnClickListener(v -> {
+            String query = searchEditText.getText().toString();
+            filterPhotos(query);
+        });
+
+        searchEditText.setOnEditorActionListener((v, actionId, event) -> {
+            String query = searchEditText.getText().toString();
+            filterPhotos(query);
+            return true;
+        });
+
+        // Khởi tạo lại BottomNavigationView và các sự kiện liên quan
+        BottomNavigationView bottomNavigationView = findViewById(R.id.bottomNavigationView);
+        bottomNavigationView.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener() {
+            @Override
+            public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+                int id = item.getItemId();
+
+                if (id == R.id.nav_photos) {
+                    return true;
+                } else if (id == R.id.nav_albums) {
+                    return true;
+                } else if (id == R.id.nav_menu) {
+                    showPopupMenu(bottomNavigationView);
+                    return true;
+                }
+
+                return false;
+            }
         });
     }
 }
