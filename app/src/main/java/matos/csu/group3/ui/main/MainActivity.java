@@ -2,14 +2,16 @@ package matos.csu.group3.ui.main;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.os.Build;
 import android.os.Bundle;
-import android.widget.SearchView;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageView;
 
 import androidx.activity.ComponentActivity;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.core.content.ContextCompat;
 import androidx.lifecycle.Observer;
 import androidx.annotation.NonNull;
 import androidx.lifecycle.ViewModelProvider;
@@ -19,10 +21,13 @@ import androidx.recyclerview.widget.RecyclerView;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.PopupMenu;
-import android.widget.SearchView;
+import android.widget.TextView;
+import android.widget.Toast;
 
+import com.bumptech.glide.Glide;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -72,13 +77,7 @@ public class MainActivity extends ComponentActivity implements PhotoAdapter.OnIt
 
 
         // Initialize RecyclerView and adapter
-        photoRecyclerView = findViewById(R.id.photoRecyclerView);
-        photoAdapter = new PhotoAdapter(new ArrayList<>(), photo -> {
-            // Handle item click events here
-        });
-        GridLayoutManager layoutManager = new GridLayoutManager(this, 3); // 3 ảnh mỗi hàng
-        photoRecyclerView.setLayoutManager(layoutManager);
-        photoRecyclerView.setAdapter(photoAdapter);
+        initializeRecyclerView();
 
         // Initialize ViewModel
         photoViewModel = new ViewModelProvider(this).get(PhotoViewModel.class);
@@ -95,22 +94,19 @@ public class MainActivity extends ComponentActivity implements PhotoAdapter.OnIt
         });
 
         // Initialize SearchView
-        SearchView searchView = findViewById(R.id.searchView);
-        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-            @Override
-            public boolean onQueryTextSubmit(String query) {
-                // Handle search query submission (optional)
-                filterPhotos(query);
-                return true;
-            }
-
-            @Override
-            public boolean onQueryTextChange(String newText) {
-                // Filter photos as the user types
-                filterPhotos(newText);
-                return true;
-            }
+        EditText searchEditText = findViewById(R.id.search_src_text);
+        ImageView searchIcon = findViewById(R.id.search_mag_icon);
+        searchIcon.setOnClickListener(v -> {
+            String query = searchEditText.getText().toString();
+            filterPhotos(query); // Gọi phương thức tìm kiếm
         });
+
+        searchEditText.setOnEditorActionListener((v, actionId, event) -> {
+            String query = searchEditText.getText().toString();
+            filterPhotos(query); // Gọi phương thức tìm kiếm
+            return true; // Trả về true để xác nhận sự kiện đã được xử lý
+        });
+
         // Khởi tạo BottomNavigationView
         BottomNavigationView bottomNavigationView = findViewById(R.id.bottomNavigationView);
 
@@ -163,6 +159,26 @@ public class MainActivity extends ComponentActivity implements PhotoAdapter.OnIt
         // Fetch photos after the permission is granted
         // You can put the previous logic here to load the photos from MediaStore
     }
+    private void initializeRecyclerView() {
+        photoRecyclerView = findViewById(R.id.photoRecyclerView);
+        photoAdapter = new PhotoAdapter(new ArrayList<>(), photo -> {
+            // Handle item click events here
+            showBigScreen(photo);
+        });
+        // Kiểm tra hướng màn hình
+        int orientation = getResources().getConfiguration().orientation;
+
+        if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            // Thiết bị đang ở chế độ ngang
+            GridLayoutManager layoutManager = new GridLayoutManager(this, 6); // 4 ảnh mỗi hàng khi xoay ngang
+            photoRecyclerView.setLayoutManager(layoutManager);
+        } else if (orientation == Configuration.ORIENTATION_PORTRAIT) {
+            // Thiết bị đang ở chế độ dọc
+            GridLayoutManager layoutManager = new GridLayoutManager(this, 3); // 3 ảnh mỗi hàng khi xoay dọc
+            photoRecyclerView.setLayoutManager(layoutManager);
+        }
+        photoRecyclerView.setAdapter(photoAdapter);
+    }
     private void showPopupMenu(View view) {
         // Tạo PopupMenu và liên kết với anchor view (BottomNavigationView)
         PopupMenu popupMenu = new PopupMenu(this, view);
@@ -190,5 +206,44 @@ public class MainActivity extends ComponentActivity implements PhotoAdapter.OnIt
 
         // Hiển thị PopupMenu
         popupMenu.show();
+    }
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+
+        // Kiểm tra hướng màn hình mới
+        if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            // Thiết bị đang ở chế độ ngang
+            Toast.makeText(this, "Landscape Mode", Toast.LENGTH_SHORT).show();
+            GridLayoutManager layoutManager = new GridLayoutManager(this, 6); // 4 ảnh mỗi hàng khi xoay ngang
+            photoRecyclerView.setLayoutManager(layoutManager);
+        } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT) {
+            // Thiết bị đang ở chế độ dọc
+            Toast.makeText(this, "Portrait Mode", Toast.LENGTH_SHORT).show();
+            GridLayoutManager layoutManager = new GridLayoutManager(this, 3); // 3 ảnh mỗi hàng khi xoay dọc
+            photoRecyclerView.setLayoutManager(layoutManager);
+        }
+    }
+    private void showBigScreen(PhotoEntity photo) {
+        // Hiển thị layout chứa ảnh lớn
+        setContentView(R.layout.solo_picture);
+
+        // Ánh xạ các view trong layout solo_picture
+        TextView txtSoloMsg = findViewById(R.id.txtSoloMsg);
+        ImageView imgSoloPhoto = findViewById(R.id.imgSoloPhoto);
+        Button btnSoloBack = findViewById(R.id.btnSoloBack);
+
+        // Đặt caption và ảnh lớn
+        txtSoloMsg.setText(photo.getName());
+        Glide.with(this) // "this" là Context (Activity hoặc Fragment)
+                .load(new File(photo.getFilePath())) // Load ảnh từ đường dẫn tệp
+                .into(imgSoloPhoto);
+
+        // Xử lý sự kiện nút "GO BACK"
+        btnSoloBack.setOnClickListener(v -> {
+            // Quay lại layout chính (GridView hoặc RecyclerView)
+            setContentView(R.layout.activity_main); // Thay thế bằng layout chính của bạn
+            initializeRecyclerView(); // Khởi tạo lại RecyclerView hoặc GridView
+        });
     }
 }
