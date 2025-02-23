@@ -6,10 +6,9 @@ import android.os.Build;
 import android.os.Bundle;
 import android.widget.SearchView;
 
-import androidx.activity.ComponentActivity;
+import androidx.fragment.app.FragmentActivity;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.core.content.ContextCompat;
 import androidx.lifecycle.Observer;
 import androidx.annotation.NonNull;
 import androidx.lifecycle.ViewModelProvider;
@@ -19,9 +18,10 @@ import androidx.recyclerview.widget.RecyclerView;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.PopupMenu;
-import android.widget.SearchView;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.android.material.navigation.NavigationBarView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,7 +31,7 @@ import matos.csu.group3.data.local.entity.PhotoEntity;
 import matos.csu.group3.ui.adapter.PhotoAdapter;
 import matos.csu.group3.viewmodel.PhotoViewModel;
 
-public class MainActivity extends ComponentActivity implements PhotoAdapter.OnItemClickListener {
+public class MainActivity extends FragmentActivity implements PhotoAdapter.OnItemClickListener {
 
     private PhotoViewModel photoViewModel;
     private RecyclerView photoRecyclerView;
@@ -111,11 +111,12 @@ public class MainActivity extends ComponentActivity implements PhotoAdapter.OnIt
                 return true;
             }
         });
+
         // Khởi tạo BottomNavigationView
         BottomNavigationView bottomNavigationView = findViewById(R.id.bottomNavigationView);
 
         // Xử lý sự kiện khi chọn một mục trong BottomNavigationView
-        bottomNavigationView.setOnNavigationItemSelectedListener(new BottomNavigationView.OnNavigationItemSelectedListener() {
+        bottomNavigationView.setOnItemSelectedListener(new NavigationBarView.OnItemSelectedListener() {
             @Override
             public boolean onNavigationItemSelected(@NonNull MenuItem item) {
                 int id = item.getItemId();
@@ -127,14 +128,18 @@ public class MainActivity extends ComponentActivity implements PhotoAdapter.OnIt
                     // Xử lý khi chọn "Album"
                     return true;
                 } else if (id == R.id.nav_menu) {
-                    // Khi nhấn vào "Menu", hiển thị PopupMenu
-                    showPopupMenu(bottomNavigationView); // Sử dụng BottomNavigationView làm anchor view
-                    return true;
+                    // Khi nhấn vào "Menu", hiển thị BottomSheetDialogFragment
+                    BottomExtendedMenu popupMenu = new BottomExtendedMenu();
+                    popupMenu.show(getSupportFragmentManager(), "PopupMenuDialogFragment");
+
+                    return false;
                 }
 
                 return false;
             }
-        });    }
+        });
+
+    }
 
     @Override
     public void onItemClick(PhotoEntity photo) {
@@ -162,33 +167,5 @@ public class MainActivity extends ComponentActivity implements PhotoAdapter.OnIt
     private void loadPhotos() {
         // Fetch photos after the permission is granted
         // You can put the previous logic here to load the photos from MediaStore
-    }
-    private void showPopupMenu(View view) {
-        // Tạo PopupMenu và liên kết với anchor view (BottomNavigationView)
-        PopupMenu popupMenu = new PopupMenu(this, view);
-
-        // Nạp menu từ tệp XML (sub_nav_menu.xml)
-        popupMenu.getMenuInflater().inflate(R.menu.sub_nav_menu, popupMenu.getMenu());
-
-        // Xử lý sự kiện khi chọn một mục trong PopupMenu
-        popupMenu.setOnMenuItemClickListener(new PopupMenu.OnMenuItemClickListener() {
-            @Override
-            public boolean onMenuItemClick(MenuItem item) {
-                int id = item.getItemId();
-
-//                if (id == R.id.sub_option1) {
-//                    // Xử lý khi chọn "Sub Item 1"
-//                    return true;
-//                } else if (id == R.id.sub_option2) {
-//                    // Xử lý khi chọn "Sub Item 2"
-//                    return true;
-//                }
-
-                return false;
-            }
-        });
-
-        // Hiển thị PopupMenu
-        popupMenu.show();
     }
 }
