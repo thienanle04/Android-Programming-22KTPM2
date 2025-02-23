@@ -2,4 +2,5 @@
     <string name="app_name">Group3</string>
     <string name="photo_name">Photo Name</string>
     <string name="photo_image">Photo Image</string>
+    <string name="crop">Crop</string>
 </resources>
