@@ -59,9 +59,6 @@ public class BottomExtendedMenu extends DialogFragment {
             // Set width to 96% of the screen and position at the bottom
             getDialog().getWindow().setLayout((int) (getResources().getDisplayMetrics().widthPixels * 0.96), ViewGroup.LayoutParams.WRAP_CONTENT);
             getDialog().getWindow().setGravity(Gravity.BOTTOM);
-
-            // Adjust position to float above the bottom
-            getDialog().getWindow().getAttributes().y = -16; // Moves it up by 16dp
         }
     }
 }
