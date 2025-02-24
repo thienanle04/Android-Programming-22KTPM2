@@ -27,11 +27,12 @@ public class PhotoAdapter extends RecyclerView.Adapter<PhotoAdapter.PhotoViewHol
     }
 
     // Method to update the photos list
-    public void setPhotos(List<PhotoEntity> photos) {
-        this.photos.clear(); // Clear the existing list
-        this.photos.addAll(photos); // Add the new items
-        notifyDataSetChanged(); // Notify the adapter that the data has changed
+    public void setPhotos(List<PhotoEntity> newPhotos) {
+        this.photos.clear();
+        this.photos.addAll(newPhotos);
+        notifyItemRangeInserted(0, newPhotos.size()); // Ensures smooth UI updates
     }
+
 
     @NonNull
     @Override

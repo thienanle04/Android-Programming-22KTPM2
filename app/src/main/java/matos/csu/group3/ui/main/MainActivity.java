@@ -50,6 +50,7 @@ public class MainActivity extends FragmentActivity implements PhotoAdapter.OnIte
                     loadPhotos();
                 } else {
                     // Permission denied, show message or handle accordingly
+//                    Toast.makeText(this, "Permission denied! Cannot load photos.", Toast.LENGTH_SHORT).show();
                 }
             });
 
@@ -75,7 +76,6 @@ public class MainActivity extends FragmentActivity implements PhotoAdapter.OnIte
                 requestPermissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE);
             }
         }
-
     }
 
     @Override
@@ -132,25 +132,9 @@ public class MainActivity extends FragmentActivity implements PhotoAdapter.OnIte
     private void loadPhotos() {
         // Fetch photos after the permission is granted
         // You can put the previous logic here to load the photos from MediaStore
-    }
-
-    private void initializeRecyclerView() {
-        photoRecyclerView = findViewById(R.id.photoRecyclerView);
-        // Handle item click events here
-        photoAdapter = new PhotoAdapter(new ArrayList<>(), this::showBigScreen);
-        // Kiểm tra hướng màn hình
-        int orientation = getResources().getConfiguration().orientation;
-
-        if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            // Thiết bị đang ở chế độ ngang
-            GridLayoutManager layoutManager = new GridLayoutManager(this, 6); // 4 ảnh mỗi hàng khi xoay ngang
-            photoRecyclerView.setLayoutManager(layoutManager);
-        } else if (orientation == Configuration.ORIENTATION_PORTRAIT) {
-            // Thiết bị đang ở chế độ dọc
-            GridLayoutManager layoutManager = new GridLayoutManager(this, 3); // 3 ảnh mỗi hàng khi xoay dọc
-            photoRecyclerView.setLayoutManager(layoutManager);
+        if (photoViewModel != null) {
+            photoViewModel.refreshPhotos();
         }
-        photoRecyclerView.setAdapter(photoAdapter);
     }
 
     @Override
@@ -183,6 +167,7 @@ public class MainActivity extends FragmentActivity implements PhotoAdapter.OnIte
         txtSoloMsg.setText(photo.getName());
         Glide.with(this) // "this" là Context (Activity hoặc Fragment)
                 .load(new File(photo.getFilePath())) // Load ảnh từ đường dẫn tệp
+//                .placeholder(R.drawable.loading_image_placeholder) // Use a placeholder image
                 .into(imgSoloPhoto);
 
         // Xử lý sự kiện nút "GO BACK"
@@ -196,7 +181,22 @@ public class MainActivity extends FragmentActivity implements PhotoAdapter.OnIte
     }
     private void initializeViews() {
         // Khởi tạo lại RecyclerView và các view khác
-        initializeRecyclerView();
+        photoRecyclerView = findViewById(R.id.photoRecyclerView);
+        // Handle item click events here
+        photoAdapter = new PhotoAdapter(new ArrayList<>(), this::showBigScreen);
+        // Kiểm tra hướng màn hình
+        int orientation = getResources().getConfiguration().orientation;
+
+        if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            // Thiết bị đang ở chế độ ngang
+            GridLayoutManager layoutManager = new GridLayoutManager(this, 6); // 4 ảnh mỗi hàng khi xoay ngang
+            photoRecyclerView.setLayoutManager(layoutManager);
+        } else if (orientation == Configuration.ORIENTATION_PORTRAIT) {
+            // Thiết bị đang ở chế độ dọc
+            GridLayoutManager layoutManager = new GridLayoutManager(this, 3); // 3 ảnh mỗi hàng khi xoay dọc
+            photoRecyclerView.setLayoutManager(layoutManager);
+        }
+        photoRecyclerView.setAdapter(photoAdapter);
 
         // Khởi tạo lại ViewModel và quan sát dữ liệu
         photoViewModel = new ViewModelProvider(this).get(PhotoViewModel.class);

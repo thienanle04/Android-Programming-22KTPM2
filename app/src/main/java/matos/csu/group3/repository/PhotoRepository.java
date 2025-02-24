@@ -29,49 +29,51 @@ public class PhotoRepository {
         executor = Executors.newSingleThreadExecutor();  // Executor for background work
         context = application.getApplicationContext();
         allPhotos = new MutableLiveData<>();
-
-        loadPhotos();
     }
 
     private void loadPhotos() {
-        String[] projection = {
-                MediaStore.Images.Media._ID,
-                MediaStore.Images.Media.DATA,
-                MediaStore.Images.Media.DATE_ADDED,
-                MediaStore.Images.Media.DISPLAY_NAME
-        };
-
-        try (Cursor cursor = context.getContentResolver().query(
-                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                projection,
-                null,
-                null,
-                MediaStore.Images.Media.DATE_ADDED + " DESC")) {
-
+        executor.execute(() -> {
             List<PhotoEntity> photoList = new ArrayList<>();
 
-            // Ensure that the cursor is valid and process it
-            if (cursor != null) {
-                while (cursor.moveToNext()) {
-                    String filePath = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA));
-                    String name = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DISPLAY_NAME));
+            String[] projection = {
+                    MediaStore.Images.Media._ID,
+                    MediaStore.Images.Media.DATA,
+                    MediaStore.Images.Media.DATE_ADDED,
+                    MediaStore.Images.Media.DISPLAY_NAME
+            };
 
-                    PhotoEntity photo = new PhotoEntity();
-                    photo.setName(name);
-                    photo.setFilePath(filePath);
+            try (Cursor cursor = context.getContentResolver().query(
+                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                    projection,
+                    null,
+                    null,
+                    MediaStore.Images.Media.DATE_ADDED + " DESC")) {
 
-                    // Add the photo to the list
-                    photoList.add(photo);
+                if (cursor != null) {
+                    while (cursor.moveToNext()) {
+                        String filePath = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA));
+                        String name = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DISPLAY_NAME));
+
+                        PhotoEntity photo = new PhotoEntity();
+                        photo.setName(name);
+                        photo.setFilePath(filePath);
+                        photoList.add(photo);
+                    }
+                    cursor.close();
                 }
-                cursor.close();
+            } catch (Exception e) {
+                e.printStackTrace();
             }
 
-            // Update the LiveData with the populated photo list
             allPhotos.postValue(photoList);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        });
     }
+
+    public void refreshPhotos() {
+//        executor.execute(this::loadPhotos);
+        loadPhotos();
+    }
+
 
     public void insert(PhotoEntity photoEntity) {
         executor.execute(() -> photoDao.insert(photoEntity));  // Execute database operation in background
