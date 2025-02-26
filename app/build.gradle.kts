@@ -50,4 +50,5 @@ dependencies {
     annotationProcessor (libs.compiler)
 
     implementation(libs.ucrop)
+    implementation (libs.material.v161)
 }

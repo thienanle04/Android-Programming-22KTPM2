@@ -20,6 +20,11 @@ public class PhotoViewModel extends AndroidViewModel {
         allPhotos = repository.getAllPhotos();
     }
 
+    public void refreshPhotos() {
+        repository.refreshPhotos();
+    }
+
+
     public void insert(PhotoEntity photoEntity) {
         repository.insert(photoEntity);
     }
