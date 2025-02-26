@@ -1,6 +1,7 @@
 package matos.csu.group3.ui.main;
 
 import android.content.Intent;
+import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.Manifest;
 import android.content.pm.PackageManager;
@@ -17,6 +18,7 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.util.Log;
 import android.view.MenuItem;
 import android.widget.Button;
 import android.widget.EditText;
@@ -27,6 +29,7 @@ import android.widget.Toast;
 import com.bumptech.glide.Glide;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationBarView;
+import com.yalantis.ucrop.UCrop;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -34,7 +37,7 @@ import java.util.List;
 import matos.csu.group3.R;
 import matos.csu.group3.data.local.entity.PhotoEntity;
 import matos.csu.group3.ui.adapter.PhotoAdapter;
-import matos.csu.group3.ui.editor.CropActivity;
+import matos.csu.group3.ui.editor.CropAndRotateActivity;
 import matos.csu.group3.viewmodel.PhotoViewModel;
 
 public class MainActivity extends FragmentActivity implements PhotoAdapter.OnItemClickListener {
@@ -52,7 +55,7 @@ public class MainActivity extends FragmentActivity implements PhotoAdapter.OnIte
                     loadPhotos();
                 } else {
                     // Permission denied, show message or handle accordingly
-//                    Toast.makeText(this, "Permission denied! Cannot load photos.", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, "Permission denied! Cannot load photos.", Toast.LENGTH_SHORT).show();
                 }
             });
 
@@ -84,15 +87,7 @@ public class MainActivity extends FragmentActivity implements PhotoAdapter.OnIte
     public void onItemClick(PhotoEntity photo) {
         // Handle item click events here
         // For example, open a detailed view of the photo
-
-        Intent cropIntent = new Intent(this, CropActivity.class);
-
-        Uri photoUri = Uri.parse(photo.getFilePath());
-        cropIntent.setData(photoUri);
-
-        cropIntent.putExtra("photoEntity", (CharSequence) photo);
-
-        startActivity(cropIntent);
+        showBigScreen(photo);
     }
 
     // Method to filter photos based on search query
@@ -173,6 +168,7 @@ public class MainActivity extends FragmentActivity implements PhotoAdapter.OnIte
         TextView txtSoloMsg = findViewById(R.id.txtSoloMsg);
         ImageView imgSoloPhoto = findViewById(R.id.imgSoloPhoto);
         Button btnSoloBack = findViewById(R.id.btnSoloBack);
+        Button btnEdit = findViewById(R.id.btnEdit);
 
         // Đặt caption và ảnh lớn
         txtSoloMsg.setText(photo.getName());
@@ -180,6 +176,15 @@ public class MainActivity extends FragmentActivity implements PhotoAdapter.OnIte
                 .load(new File(photo.getFilePath())) // Load ảnh từ đường dẫn tệp
 //                .placeholder(R.drawable.loading_image_placeholder) // Use a placeholder image
                 .into(imgSoloPhoto);
+
+        btnEdit.setOnClickListener(v -> {
+            Intent cropIntent = new Intent(this, CropAndRotateActivity.class);
+            Log.d("CropActivity", "Image URI: " + Uri.parse(photo.getFilePath()));
+            cropIntent.setData(Uri.fromFile(new File(photo.getFilePath())));
+            cropIntent.putExtra("photoEntity", photo);
+
+            startActivity(cropIntent);
+        });
 
         // Xử lý sự kiện nút "GO BACK"
         btnSoloBack.setOnClickListener(v -> {
@@ -194,7 +199,8 @@ public class MainActivity extends FragmentActivity implements PhotoAdapter.OnIte
         // Khởi tạo lại RecyclerView và các view khác
         photoRecyclerView = findViewById(R.id.photoRecyclerView);
         // Handle item click events here
-        photoAdapter = new PhotoAdapter(new ArrayList<>(), this::showBigScreen);
+        photoAdapter = new PhotoAdapter(new ArrayList<>(), this);
+        // photoAdapter = new PhotoAdapter(new ArrayList<>(), this::showBigScreen);
         // Kiểm tra hướng màn hình
         int orientation = getResources().getConfiguration().orientation;
 
@@ -261,6 +267,32 @@ public class MainActivity extends FragmentActivity implements PhotoAdapter.OnIte
                 return false;
             }
         });
+    }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (resultCode == RESULT_OK) {
+            if (requestCode == UCrop.REQUEST_CROP) {
+                if (data != null && data.hasExtra("photoEntity")) {
+                    PhotoEntity updatedPhoto = (PhotoEntity) data.getSerializableExtra("photoEntity");
+
+                    if (photoViewModel != null) {
+                        photoViewModel.updatePhoto(updatedPhoto);
+                        photoViewModel.refreshPhotos();
+                    }
+
+                    if (updatedPhoto.getFilePath() != null) {
+                        MediaScannerConnection.scanFile(
+                                this,
+                                new String[]{ updatedPhoto.getFilePath() },
+                                new String[]{ "image/jpeg" },
+                                (path, uri) -> Log.d("MainActivity", "Rescanned edited file: " + path)
+                        );
+                    }
+                }
+            }
+        }
     }
 }

@@ -79,6 +79,12 @@ public class PhotoRepository {
         executor.execute(() -> photoDao.insert(photoEntity));  // Execute database operation in background
     }
 
+    public void update(PhotoEntity photoEntity) {
+        new Thread(() -> {
+            photoDao.update(photoEntity);
+        }).start();
+    }
+
     public MutableLiveData<List<PhotoEntity>> getAllPhotos() {
         return allPhotos;
     }

@@ -7,6 +7,7 @@ import java.io.Serializable;
 @Entity(tableName = "photos")
 public class PhotoEntity implements Serializable{
 
+    private static final long serialVersionUID = 1L;
     @PrimaryKey(autoGenerate = true)
     private int id;
 

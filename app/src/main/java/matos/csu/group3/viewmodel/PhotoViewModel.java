@@ -24,7 +24,12 @@ public class PhotoViewModel extends AndroidViewModel {
         repository.refreshPhotos();
     }
 
-
+    public void updatePhoto(PhotoEntity photoEntity) {
+        if (photoEntity != null && photoEntity.getId() > 0) {
+            repository.update(photoEntity);
+            refreshPhotos();
+        }
+    }
     public void insert(PhotoEntity photoEntity) {
         repository.insert(photoEntity);
     }
