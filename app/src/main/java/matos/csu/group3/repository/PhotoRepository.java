@@ -5,11 +5,13 @@ import android.database.Cursor;
 import android.provider.MediaStore;
 import android.content.Context;
 
-import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
@@ -39,8 +41,11 @@ public class PhotoRepository {
                     MediaStore.Images.Media._ID,
                     MediaStore.Images.Media.DATA,
                     MediaStore.Images.Media.DATE_ADDED,
-                    MediaStore.Images.Media.DISPLAY_NAME
+                    MediaStore.Images.Media.DISPLAY_NAME,
+                    MediaStore.Images.Media.DATE_TAKEN
             };
+
+            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
 
             try (Cursor cursor = context.getContentResolver().query(
                     MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
@@ -53,8 +58,12 @@ public class PhotoRepository {
                     while (cursor.moveToNext()) {
                         String filePath = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA));
                         String name = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DISPLAY_NAME));
+                        long dateTakenMillis = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATE_TAKEN));
+
+                        String dateTaken = sdf.format(new Date(dateTakenMillis));
 
                         PhotoEntity photo = new PhotoEntity();
+                        photo.setDateTaken(dateTaken);
                         photo.setName(name);
                         photo.setFilePath(filePath);
                         photoList.add(photo);
@@ -64,6 +73,12 @@ public class PhotoRepository {
             } catch (Exception e) {
                 e.printStackTrace();
             }
+
+            // Sắp xếp danh sách ảnh theo ngày chụp (từ mới nhất đến cũ nhất)
+            photoList.sort((photo1, photo2) -> Long.compare(
+                    Long.parseLong(photo2.getDateTaken().replace("/", "")), // Chuyển đổi ngày thành số để so sánh
+                    Long.parseLong(photo1.getDateTaken().replace("/", ""))
+            ));
 
             allPhotos.postValue(photoList);
         });

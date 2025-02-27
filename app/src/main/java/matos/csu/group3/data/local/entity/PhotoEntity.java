@@ -143,3 +143,5 @@ public class PhotoEntity implements Serializable{
         isSynced = synced;
     }
 }
+
+

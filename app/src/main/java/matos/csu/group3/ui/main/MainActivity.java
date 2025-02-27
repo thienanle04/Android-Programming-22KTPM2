@@ -32,10 +32,20 @@ import com.google.android.material.navigation.NavigationBarView;
 import com.yalantis.ucrop.UCrop;
 
 import java.io.File;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
 import matos.csu.group3.R;
+import matos.csu.group3.data.local.entity.HeaderItem;
+import matos.csu.group3.data.local.entity.ListItem;
 import matos.csu.group3.data.local.entity.PhotoEntity;
+import matos.csu.group3.data.local.entity.PhotoItem;
 import matos.csu.group3.ui.adapter.PhotoAdapter;
 import matos.csu.group3.ui.editor.CropAndRotateActivity;
 import matos.csu.group3.viewmodel.PhotoViewModel;
@@ -46,6 +56,8 @@ public class MainActivity extends FragmentActivity implements PhotoAdapter.OnIte
     private RecyclerView photoRecyclerView;
     private PhotoAdapter photoAdapter;
     private List<PhotoEntity> allPhotos; // Store the full list of photos
+    private Map<String, List<PhotoEntity>> photosByDate; // Store photos grouped by date
+    List<ListItem> groupedList;
 
     // Register the permission request launcher
     private final ActivityResultLauncher<String> requestPermissionLauncher =
@@ -102,42 +114,17 @@ public class MainActivity extends FragmentActivity implements PhotoAdapter.OnIte
             }
         }
 
-        // Update the adapter with the filtered list
-        photoAdapter.setPhotos(filteredPhotos);
-
-        // Khởi tạo BottomNavigationView
-        BottomNavigationView bottomNavigationView = findViewById(R.id.bottomNavigationView);
-
-        // Xử lý sự kiện khi chọn một mục trong BottomNavigationView
-        bottomNavigationView.setOnItemSelectedListener(new NavigationBarView.OnItemSelectedListener() {
-            @Override
-            public boolean onNavigationItemSelected(@NonNull MenuItem item) {
-                int id = item.getItemId();
-
-                if (id == R.id.nav_photos) {
-                    // Xử lý khi chọn "Ảnh"
-                    return true;
-                } else if (id == R.id.nav_albums) {
-                    // Xử lý khi chọn "Album"
-                    return true;
-                } else if (id == R.id.nav_menu) {
-                    // Khi nhấn vào "Menu", hiển thị BottomSheetDialogFragment
-                    BottomExtendedMenu popupMenu = new BottomExtendedMenu();
-                    popupMenu.show(getSupportFragmentManager(), "PopupMenuDialogFragment");
-
-                    return false;
-                }
-
-                return false;
-            }
-        });
+        // Nhóm lại ảnh theo ngày
+        photosByDate = groupPhotosByDate(filteredPhotos);
+        groupedList = convertToGroupedList(photosByDate);
+        // Cập nhật adapter với danh sách ảnh đã lọc
+        photoAdapter = new PhotoAdapter(groupedList, this);
+        photoRecyclerView.setAdapter(photoAdapter);
     }
-
 
     // Method to load photos from the MediaStore
     private void loadPhotos() {
         // Fetch photos after the permission is granted
-        // You can put the previous logic here to load the photos from MediaStore
         if (photoViewModel != null) {
             photoViewModel.refreshPhotos();
         }
@@ -151,7 +138,7 @@ public class MainActivity extends FragmentActivity implements PhotoAdapter.OnIte
         if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
             // Thiết bị đang ở chế độ ngang
             Toast.makeText(this, "Landscape Mode", Toast.LENGTH_SHORT).show();
-            GridLayoutManager layoutManager = new GridLayoutManager(this, 6); // 4 ảnh mỗi hàng khi xoay ngang
+            GridLayoutManager layoutManager = new GridLayoutManager(this, 6); // 6 ảnh mỗi hàng khi xoay ngang
             photoRecyclerView.setLayoutManager(layoutManager);
         } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT) {
             // Thiết bị đang ở chế độ dọc
@@ -160,6 +147,7 @@ public class MainActivity extends FragmentActivity implements PhotoAdapter.OnIte
             photoRecyclerView.setLayoutManager(layoutManager);
         }
     }
+
     private void showBigScreen(PhotoEntity photo) {
         // Hiển thị layout chứa ảnh lớn
         setContentView(R.layout.solo_picture);
@@ -171,10 +159,9 @@ public class MainActivity extends FragmentActivity implements PhotoAdapter.OnIte
         Button btnEdit = findViewById(R.id.btnEdit);
 
         // Đặt caption và ảnh lớn
-        txtSoloMsg.setText(photo.getName());
+        txtSoloMsg.setText(photo.getDateTaken() + "X");
         Glide.with(this) // "this" là Context (Activity hoặc Fragment)
                 .load(new File(photo.getFilePath())) // Load ảnh từ đường dẫn tệp
-//                .placeholder(R.drawable.loading_image_placeholder) // Use a placeholder image
                 .into(imgSoloPhoto);
 
         btnEdit.setOnClickListener(v -> {
@@ -195,39 +182,58 @@ public class MainActivity extends FragmentActivity implements PhotoAdapter.OnIte
             initializeViews();
         });
     }
+
     private void initializeViews() {
-        // Khởi tạo lại RecyclerView và các view khác
+        // Khởi tạo RecyclerView
         photoRecyclerView = findViewById(R.id.photoRecyclerView);
-        // Handle item click events here
-        photoAdapter = new PhotoAdapter(new ArrayList<>(), this);
-        // photoAdapter = new PhotoAdapter(new ArrayList<>(), this::showBigScreen);
+
+        // Khởi tạo adapter với danh sách ảnh rỗng ban đầu
+        photosByDate = new LinkedHashMap<>();
+        groupedList = convertToGroupedList(photosByDate);
+        photoAdapter = new PhotoAdapter(groupedList, this);
+
         // Kiểm tra hướng màn hình
         int orientation = getResources().getConfiguration().orientation;
 
-        if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            // Thiết bị đang ở chế độ ngang
-            GridLayoutManager layoutManager = new GridLayoutManager(this, 6); // 4 ảnh mỗi hàng khi xoay ngang
-            photoRecyclerView.setLayoutManager(layoutManager);
-        } else if (orientation == Configuration.ORIENTATION_PORTRAIT) {
-            // Thiết bị đang ở chế độ dọc
-            GridLayoutManager layoutManager = new GridLayoutManager(this, 3); // 3 ảnh mỗi hàng khi xoay dọc
-            photoRecyclerView.setLayoutManager(layoutManager);
-        }
+        // Thiết lập số cột dựa trên hướng màn hình
+        int spanCount = (orientation == Configuration.ORIENTATION_LANDSCAPE) ? 6 : 3;
+
+        // Khởi tạo GridLayoutManager
+        GridLayoutManager layoutManager = new GridLayoutManager(this, spanCount);
+        layoutManager.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
+            @Override
+            public int getSpanSize(int position) {
+                // Nếu là Header, chiếm toàn bộ hàng (span size = số cột)
+                if (photoAdapter.getItemViewType(position) == PhotoAdapter.TYPE_HEADER) {
+                    return spanCount;
+                }
+                // Nếu là Photo, chiếm 1 ô (span size = 1)
+                return 1;
+            }
+        });
+
+        // Thiết lập LayoutManager cho RecyclerView
+        photoRecyclerView.setLayoutManager(layoutManager);
         photoRecyclerView.setAdapter(photoAdapter);
 
-        // Khởi tạo lại ViewModel và quan sát dữ liệu
+        // Khởi tạo ViewModel và quan sát dữ liệu
         photoViewModel = new ViewModelProvider(this).get(PhotoViewModel.class);
         photoViewModel.getAllPhotos().observe(this, new Observer<List<PhotoEntity>>() {
             @Override
             public void onChanged(List<PhotoEntity> photoEntities) {
-                // Update the full list of photos
+                // Cập nhật danh sách ảnh
                 allPhotos = photoEntities;
-                // Update the adapter with the latest photos
-                photoAdapter.setPhotos(photoEntities);
+
+                // Nhóm ảnh theo ngày
+                photosByDate = groupPhotosByDate(photoEntities);
+                groupedList = convertToGroupedList(photosByDate);
+
+                // Cập nhật adapter với danh sách ảnh mới
+                photoAdapter.updateData(groupedList);
             }
         });
 
-        // Khởi tạo lại SearchView và các sự kiện liên quan
+        // Khởi tạo SearchView và các sự kiện liên quan
         EditText searchEditText = findViewById(R.id.search_src_text);
         ImageView searchIcon = findViewById(R.id.search_mag_icon);
         searchIcon.setOnClickListener(v -> {
@@ -269,6 +275,74 @@ public class MainActivity extends FragmentActivity implements PhotoAdapter.OnIte
         });
     }
 
+    // Phương thức để nhóm ảnh theo ngày
+    private Map<String, List<PhotoEntity>> groupPhotosByDate(List<PhotoEntity> photos) {
+        // Sử dụng LinkedHashMap để giữ nguyên thứ tự các ngày
+        Map<String, List<PhotoEntity>> photosByDate = new LinkedHashMap<>();
+
+        // Nhóm ảnh theo ngày
+        for (PhotoEntity photo : photos) {
+            if (photo != null) {
+                String date = photo.getDateTaken(); // Lấy ngày từ PhotoEntity
+                if (!photosByDate.containsKey(date)) {
+                    photosByDate.put(date, new ArrayList<>());
+                }
+                photosByDate.get(date).add(photo);
+            }
+        }
+
+        // Sắp xếp các ngày (keys của Map) từ mới nhất đến cũ nhất
+        List<String> sortedDates = new ArrayList<>(photosByDate.keySet());
+        sortedDates.sort((date1, date2) -> {
+            // Chuyển đổi ngày thành số để so sánh (giả sử định dạng ngày là "dd/MM/yyyy")
+            long date1Millis = 0, date2Millis = 0;
+            try {
+                date1Millis = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).parse(date1).getTime();
+                date2Millis = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).parse(date2).getTime();
+
+            } catch (ParseException e) {
+                throw new RuntimeException(e);
+            }
+            return Long.compare(date2Millis, date1Millis); // Sắp xếp từ mới nhất đến cũ nhất
+        });
+
+        // Tạo một LinkedHashMap mới với thứ tự các ngày đã được sắp xếp
+        Map<String, List<PhotoEntity>> sortedPhotosByDate = new LinkedHashMap<>();
+        for (String date : sortedDates) {
+            sortedPhotosByDate.put(date, photosByDate.get(date));
+        }
+
+        // Sắp xếp các ảnh trong từng nhóm theo thời gian chụp (từ mới nhất đến cũ nhất)
+        for (List<PhotoEntity> photoList : sortedPhotosByDate.values()) {
+            photoList.sort((photo1, photo2) -> {
+                // Giả sử PhotoEntity có phương thức getDateTaken() trả về định dạng "dd/MM/yyyy"
+                long date1Millis = 0, date2Millis = 0;
+                try {
+                    date1Millis = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).parse(photo1.getDateTaken()).getTime();
+                    date2Millis = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).parse(photo2.getDateTaken()).getTime();
+
+                } catch (ParseException e) {
+                    throw new RuntimeException(e);
+                }
+                return Long.compare(date2Millis, date1Millis); // Sắp xếp từ mới nhất đến cũ nhất
+            });
+        }
+
+        return sortedPhotosByDate;
+    }
+
+    private List<ListItem> convertToGroupedList(Map<String, List<PhotoEntity>> photosByDate) {
+        List<ListItem> groupedList = new ArrayList<>();
+
+        for (Map.Entry<String, List<PhotoEntity>> entry : photosByDate.entrySet()) {
+            groupedList.add(new HeaderItem(entry.getKey()));
+            for (PhotoEntity photo : entry.getValue()) {
+                groupedList.add(new PhotoItem(photo));
+            }
+        }
+
+        return groupedList;
+    }
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
