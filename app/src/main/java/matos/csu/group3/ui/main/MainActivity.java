@@ -1,6 +1,8 @@
 package matos.csu.group3.ui.main;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.Manifest;
@@ -428,9 +430,12 @@ public class MainActivity extends FragmentActivity implements PhotoAdapter.OnIte
                 if (photoDate.substring(5).equals(todayDate.substring(5))) { // Compare MM-dd only
                     // Calculate the number of years ago the photo was taken
                     int yearsAgo = calculateYearsAgo(dateTakenMillis);
-                    cursor.close();
-                    sendNotification(yearsAgo, photoPath, dateTakenMillis); // Pass the photo path to the notification
-                    return;
+
+                    if (yearsAgo > 0) {
+                        cursor.close();
+                        sendNotification(yearsAgo, photoPath, dateTakenMillis);
+                        return;
+                    }
                 }
             }
             cursor.close();
@@ -458,37 +463,44 @@ public class MainActivity extends FragmentActivity implements PhotoAdapter.OnIte
     }
 
     private void sendNotification(int yearsAgo, String photoPath, long dateTakenMillis) {
-        // Create an intent to open the MainActivity with the photo path
         Intent intent = new Intent(this, MainActivity.class);
-        intent.putExtra("photo_path", photoPath); // Pass the photo path as an extra
-        intent.putExtra("date_taken", dateTakenMillis); // Pass the date taken
+        intent.putExtra("photo_path", photoPath);
+        intent.putExtra("date_taken", dateTakenMillis);
         intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-
+    
         PendingIntent pendingIntent = PendingIntent.getActivity(
                 this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
-
-        String notificationText;
-        if (yearsAgo == 1) {
-            notificationText = "You took a photo on this date 1 year ago!";
-        } else {
-            notificationText = "You took a photo on this date " + yearsAgo + " years ago!";
-        }
-
+    
+        String notificationText = (yearsAgo == 1) ? 
+            "You took a photo on this date 1 year ago!" : 
+            "You took a photo on this date " + yearsAgo + " years ago!";
+    
+        // Load the photo as a Bitmap
+        Bitmap photoBitmap = BitmapFactory.decodeFile(photoPath);
+    
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_photo)
+                .setSmallIcon(R.drawable.ic_photo) // Small icon is still required
                 .setContentTitle("Photo Reminder")
                 .setContentText(notificationText)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setContentIntent(pendingIntent)
                 .setAutoCancel(true);
-
+    
+        // FIX: If the photo is successfully loaded, use it in the notification
+        if (photoBitmap != null) {
+            builder.setLargeIcon(photoBitmap) // Use photo as large icon
+                    .setStyle(new NotificationCompat.BigPictureStyle()
+                    .bigPicture(photoBitmap) // Show photo in expanded notification
+                    .bigLargeIcon((Bitmap) null));  // Hide large icon when expanded
+        }
+    
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
-
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
             notificationManager.notify(NOTIFICATION_ID, builder.build());
         }
     }
+    
 
 
     private void createNotificationChannel() {
