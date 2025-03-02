@@ -1,0 +1,8 @@
+<resources>
+    <color name="blue">#2962FF</color>
+    <color name="blue_dark">#82B1FF</color>
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="background_dark">#121212</color>
+    <color name="dark_surface">#1E1E1E</color>
+</resources>

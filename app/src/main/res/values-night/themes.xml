@@ -2,7 +2,25 @@
     <!-- Base application theme. -->
     <style name="Base.Theme.Group3" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Customize your dark theme here. -->
-        <!-- <item name="colorPrimary">@color/my_dark_primary</item> -->
+        <!-- Primary Colors -->
+        <item name="colorPrimary">@color/blue_dark</item>
+        <item name="colorOnPrimary">@color/white</item>
 
+        <!-- Background & Surface Colors -->
+        <item name="backgroundColor">@color/background_dark</item>
+        <item name="colorOnBackground">@color/white</item>
+        <item name="colorSurface">@color/dark_surface</item>
+
+        <!-- Navigation & Status Bar -->
+        <item name="android:statusBarColor">?colorPrimary</item>
+        <item name="android:navigationBarColor">?colorSurface</item>
+    </style>
+
+    <style name="MenuBackground">
+        <item name="android:backgroundTint">@color/black</item>
+    </style>
+
+    <style name="MenuIcon">
+        <item name="android:tint">@color/grey</item>
     </style>
 </resources>

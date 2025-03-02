@@ -13,7 +13,7 @@
         app:cardCornerRadius="24dp"
         app:cardElevation="0dp"
         android:layout_marginBottom="16dp"
-        android:backgroundTint="@color/white"
+        style="@style/MenuBackground"
         android:background="@drawable/rounded_menu_background"
         android:padding="16dp">
 
@@ -38,13 +38,13 @@
                     android:layout_width="48dp"
                     android:layout_height="48dp"
                     android:src="@drawable/ic_favorite"
-                    app:tint="@color/black" />
+                    style="@style/MenuIcon" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Favorites"
-                    android:textSize="14sp"
+                    android:textSize="13sp"
                     android:textColor="@color/black"/>
             </LinearLayout>
 
@@ -62,13 +62,13 @@
                     android:layout_width="48dp"
                     android:layout_height="48dp"
                     android:src="@drawable/ic_location"
-                    app:tint="@color/black" />
+                    style="@style/MenuIcon" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Location"
-                    android:textSize="14sp"
+                    android:textSize="13sp"
                     android:textColor="@color/black"/>
             </LinearLayout>
 
@@ -86,13 +86,13 @@
                     android:layout_width="48dp"
                     android:layout_height="48dp"
                     android:src="@drawable/ic_trash"
-                    app:tint="@color/black" />
+                    style="@style/MenuIcon" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Trash"
-                    android:textSize="14sp"
+                    android:textSize="13sp"
                     android:textColor="@color/black"/>
             </LinearLayout>
 
@@ -110,13 +110,13 @@
                     android:layout_width="48dp"
                     android:layout_height="48dp"
                     android:src="@drawable/ic_settings"
-                    app:tint="@color/black" />
+                    style="@style/MenuIcon" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Settings"
-                    android:textSize="14sp"
+                    android:textSize="13sp"
                     android:textColor="@color/black"/>
             </LinearLayout>
 

@@ -1,0 +1,38 @@
+{
+  "project_info": {
+    "project_number": "754399029",
+    "project_id": "memoria-22ktpm",
+    "storage_bucket": "memoria-22ktpm.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:754399029:android:cf1e6de2408bcc3945be7c",
+        "android_client_info": {
+          "package_name": "matos.csu.group3"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "754399029-jr1nuobn0t7rflnmp39hh9qf4efp87e4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "matos.csu.group3",
+            "certificate_hash": "bad0e7c28038553a9b4e9835cf44e8ccf43bee58"
+          }
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCxifht6egoJ5Uqz9hzOiEv5_rB9GZW6_g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
