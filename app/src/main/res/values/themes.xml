@@ -1,14 +1,27 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Base application theme using Material 3 -->
     <style name="Base.Theme.Group3" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Primary Colors -->
+        <item name="colorPrimary">@color/blue</item>
+        <item name="colorOnPrimary">@color/white</item>
 
+        <!-- Background & Surface Colors -->
+        <item name="backgroundColor">@color/background_light</item>
+        <item name="colorOnBackground">@color/black</item>
+        <item name="colorSurface">@color/white</item>
+
+        <!-- Navigation & Status Bar -->
+        <item name="android:statusBarColor">?colorPrimary</item>
+        <item name="android:navigationBarColor">?colorSurface</item>
     </style>
 
     <style name="Theme.Group3" parent="Base.Theme.Group3" />
 
-    <!-- BottomSheetDialog with Transparent Background (Use Material 2) -->
-    <style name="CustomBottomSheetDialogTheme" parent="Theme.MaterialComponents.Light.BottomSheetDialog">
-        <item name="android:windowBackground">@android:color/transparent</item>
-        <item name="android:backgroundDimEnabled">false</item> <!-- Removes dim background -->
+    <style name="MenuBackground">
+        <item name="android:backgroundTint">@color/white</item>
+    </style>
+
+    <style name="MenuIcon">
+        <item name="android:tint">@color/grey</item>
     </style>
 </resources>

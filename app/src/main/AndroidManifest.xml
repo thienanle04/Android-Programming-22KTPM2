@@ -30,10 +30,13 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".ui.main.SettingsActivity"
+            android:label="Cài đặt Bộ sưu tập"
+            android:parentActivityName=".ui.main.MainActivity">
+        </activity>
         <activity
             android:name="com.yalantis.ucrop.UCropActivity"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar"/>
+            android:screenOrientation="portrait" />
         <activity android:name=".ui.editor.CropAndRotateActivity"/>
     </application>
 

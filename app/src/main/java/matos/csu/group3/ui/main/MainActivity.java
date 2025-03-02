@@ -11,8 +11,8 @@ import android.content.res.Configuration;
 import android.os.Build;
 import android.os.Bundle;
 
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
-import androidx.fragment.app.FragmentActivity;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.lifecycle.Observer;
@@ -62,9 +62,10 @@ import matos.csu.group3.data.local.entity.PhotoEntity;
 import matos.csu.group3.data.local.entity.PhotoItem;
 import matos.csu.group3.ui.adapter.PhotoAdapter;
 import matos.csu.group3.ui.editor.CropAndRotateActivity;
+import matos.csu.group3.ui.fragment.BottomExtendedMenu;
 import matos.csu.group3.viewmodel.PhotoViewModel;
 
-public class MainActivity extends FragmentActivity implements PhotoAdapter.OnItemClickListener {
+public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnItemClickListener {
 
     private PhotoViewModel photoViewModel;
     private RecyclerView photoRecyclerView;
@@ -288,8 +289,7 @@ public class MainActivity extends FragmentActivity implements PhotoAdapter.OnIte
                     return true;
                 } else if (id == R.id.nav_menu) {
                     // Khi nhấn vào "Menu", hiển thị BottomSheetDialogFragment
-                    BottomExtendedMenu popupMenu = new BottomExtendedMenu();
-                    popupMenu.show(getSupportFragmentManager(), "PopupMenuDialogFragment");
+                    BottomExtendedMenu.show(getSupportFragmentManager());
 
                     return false;
                 }

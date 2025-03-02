@@ -27,12 +27,14 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:background="@null"
+            android:minHeight="48dp"
             android:hint="Search photos..."
             android:imeOptions="actionSearch"
             android:inputType="text"
             android:maxLines="1"
             android:paddingStart="8dp"
-            android:paddingEnd="8dp" />
+            android:paddingEnd="8dp"
+            android:height="48dp" />
 
         <!-- Icon search -->
         <ImageView
@@ -40,7 +42,8 @@
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:layout_marginStart="8dp"
-            android:src="@drawable/ic_search" />
+            android:src="@drawable/ic_search"
+            style="@style/MenuIcon" />
 
         <!-- Icon Cloud -->
         <ImageView
@@ -48,7 +51,8 @@
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:layout_marginStart="8dp"
-            android:src="@drawable/ic_cloud" /> <!-- Sử dụng icon cloud hoặc tải icon từ thư viện -->
+            android:src="@drawable/ic_cloud"
+            style="@style/MenuIcon"/> <!-- Sử dụng icon cloud hoặc tải icon từ thư viện -->
 
         <!-- Nút 3 chấm (Menu Icon) -->
         <ImageView
@@ -56,7 +60,8 @@
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:layout_marginStart="8dp"
-            android:src="@drawable/ic_menu" /> <!-- Sử dụng icon 3 chấm hoặc tải icon từ thư viện -->
+            android:src="@drawable/ic_menu"
+            style="@style/MenuIcon" /> <!-- Sử dụng icon 3 chấm hoặc tải icon từ thư viện -->
     </LinearLayout>
 
     <!-- RecyclerView -->
@@ -70,7 +75,8 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        tools:listitem="@layout/item_photo" />
+        tools:listitem="@layout/item_photo"
+        android:importantForAccessibility="yes" />
 
     <!-- BottomNavigationView -->
     <com.google.android.material.bottomnavigation.BottomNavigationView
@@ -82,5 +88,4 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
-
 </androidx.constraintlayout.widget.ConstraintLayout>
