@@ -34,6 +34,7 @@
             android:label="Cài đặt Bộ sưu tập"
             android:parentActivityName=".ui.main.MainActivity">
         </activity>
+        <activity android:name=".ui.main.DisplaySinglePhotoActivity" />
         <activity
             android:name="com.yalantis.ucrop.UCropActivity"
             android:screenOrientation="portrait" />

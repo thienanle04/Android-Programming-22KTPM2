@@ -174,38 +174,41 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
     }
 
     private void showBigScreen(PhotoEntity photo) {
-        // Hiển thị layout chứa ảnh lớn
-        setContentView(R.layout.solo_picture);
-
-        // Ánh xạ các view trong layout solo_picture
-        TextView txtSoloMsg = findViewById(R.id.txtSoloMsg);
-        ImageView imgSoloPhoto = findViewById(R.id.imgSoloPhoto);
-        Button btnSoloBack = findViewById(R.id.btnSoloBack);
-        Button btnEdit = findViewById(R.id.btnEdit);
-
-        // Đặt caption và ảnh lớn
-        txtSoloMsg.setText(photo.getDateTaken() + "X");
-        Glide.with(this) // "this" là Context (Activity hoặc Fragment)
-                .load(new File(photo.getFilePath())) // Load ảnh từ đường dẫn tệp
-                .into(imgSoloPhoto);
-
-        btnEdit.setOnClickListener(v -> {
-            Intent cropIntent = new Intent(this, CropAndRotateActivity.class);
-            Log.d("CropActivity", "Image URI: " + Uri.parse(photo.getFilePath()));
-            cropIntent.setData(Uri.fromFile(new File(photo.getFilePath())));
-            cropIntent.putExtra("photoEntity", photo);
-
-            startActivity(cropIntent);
-        });
-
-        // Xử lý sự kiện nút "GO BACK"
-        btnSoloBack.setOnClickListener(v -> {
-            // Quay lại layout chính (activity_main)
-            setContentView(R.layout.activity_main);
-
-            // Khởi tạo lại các view và RecyclerView
-            initializeViews();
-        });
+//        // Hiển thị layout chứa ảnh lớn
+//        setContentView(R.layout.activity_display_single_photo);
+//
+//        // Ánh xạ các view trong layout solo_picture
+//        TextView txtSoloMsg = findViewById(R.id.txtSoloMsg);
+//        ImageView imgSoloPhoto = findViewById(R.id.imgSoloPhoto);
+//        Button btnSoloBack = findViewById(R.id.btnSoloBack);
+//        Button btnEdit = findViewById(R.id.btnEdit);
+//
+//        // Đặt caption và ảnh lớn
+//        txtSoloMsg.setText(photo.getDateTaken() + "X");
+//        Glide.with(this) // "this" là Context (Activity hoặc Fragment)
+//                .load(new File(photo.getFilePath())) // Load ảnh từ đường dẫn tệp
+//                .into(imgSoloPhoto);
+//
+//        btnEdit.setOnClickListener(v -> {
+//            Intent cropIntent = new Intent(this, CropAndRotateActivity.class);
+//            Log.d("CropActivity", "Image URI: " + Uri.parse(photo.getFilePath()));
+//            cropIntent.setData(Uri.fromFile(new File(photo.getFilePath())));
+//            cropIntent.putExtra("photoEntity", photo);
+//
+//            startActivity(cropIntent);
+//        });
+//
+//        // Xử lý sự kiện nút "GO BACK"
+//        btnSoloBack.setOnClickListener(v -> {
+//            // Quay lại layout chính (activity_main)
+//            setContentView(R.layout.activity_main);
+//
+//            // Khởi tạo lại các view và RecyclerView
+//            initializeViews();
+//        });
+        Intent intent = new Intent(this, DisplaySinglePhotoActivity.class);
+        intent.putExtra("photoEntity", photo);
+        startActivity(intent);
     }
 
     private void initializeViews() {
@@ -504,7 +507,7 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
 
 
     private void createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             CharSequence name = "Photo Reminder";
             String description = "Reminds you of photos taken on the same date in previous years";
             int importance = NotificationManager.IMPORTANCE_HIGH;
