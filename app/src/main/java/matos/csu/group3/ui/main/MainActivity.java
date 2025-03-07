@@ -1,8 +1,8 @@
 package matos.csu.group3.ui.main;
 
+import android.app.AlarmManager;
+import android.content.Context;
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.Manifest;
@@ -11,7 +11,6 @@ import android.content.res.Configuration;
 import android.os.Build;
 import android.os.Bundle;
 
-import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.FragmentActivity;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -43,16 +42,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
-import android.provider.MediaStore;
-import android.database.Cursor;
-
-import androidx.core.app.NotificationCompat;
-import androidx.core.app.NotificationManagerCompat;
-
-import java.util.Calendar;
 import java.util.Date;
 
 import matos.csu.group3.R;
@@ -63,6 +52,7 @@ import matos.csu.group3.data.local.entity.PhotoItem;
 import matos.csu.group3.ui.adapter.PhotoAdapter;
 import matos.csu.group3.ui.editor.CropAndRotateActivity;
 import matos.csu.group3.viewmodel.PhotoViewModel;
+import matos.csu.group3.notification.NotificationHelper;
 
 public class MainActivity extends FragmentActivity implements PhotoAdapter.OnItemClickListener {
 
@@ -73,9 +63,7 @@ public class MainActivity extends FragmentActivity implements PhotoAdapter.OnIte
     private Map<String, List<PhotoEntity>> photosByDate; // Store photos grouped by date
     List<ListItem> groupedList;
 
-    private static final String CHANNEL_ID = "photo_reminder_channel";
-    private static final int NOTIFICATION_ID = 1;
-
+    
     // Register the permission request launcher
     private final ActivityResultLauncher<String> requestPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
@@ -93,29 +81,33 @@ public class MainActivity extends FragmentActivity implements PhotoAdapter.OnIte
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        createNotificationChannel();
+        // Initialize notification channel
+        NotificationHelper.createNotificationChannel(this);
 
         initializeViews();
-
-        // Handle the photo path from the notification
         handleIntent(getIntent());
 
-        // Check for permissions using ActivityResultContracts
+
+        // Check for permissions
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (checkSelfPermission(Manifest.permission.READ_MEDIA_IMAGES) == PackageManager.PERMISSION_GRANTED) {
-                loadPhotos(); // Permission granted, load photos
+                loadPhotos();
                 requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, 101);
-                checkPhotosAndNotify();
             } else {
                 requestPermissionLauncher.launch(Manifest.permission.READ_MEDIA_IMAGES);
             }
         } else {
-            // For older versions, handle `READ_EXTERNAL_STORAGE` permission
             if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
                 loadPhotos();
             } else {
                 requestPermissionLauncher.launch(Manifest.permission.READ_EXTERNAL_STORAGE);
             }
+        }
+
+        // Only schedule the notification if permission is granted
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S ||
+                ((AlarmManager) getSystemService(Context.ALARM_SERVICE)).canScheduleExactAlarms()) {
+            NotificationHelper.scheduleDailyNotification(this);
         }
     }
 
@@ -395,14 +387,13 @@ public class MainActivity extends FragmentActivity implements PhotoAdapter.OnIte
     }
 
     //Handle Notification
-    
+
     private void handleIntent(Intent intent) {
-        if (intent != null && intent.hasExtra("photo_path")) {
+        if (intent != null) {
             String photoPath = intent.getStringExtra("photo_path");
             long dateTakenMillis = intent.getLongExtra("date_taken", -1);
 
             if (photoPath != null && dateTakenMillis != -1) {
-                // Create a PhotoEntity object using the default constructor
                 PhotoEntity photo = new PhotoEntity();
                 photo.setFilePath(photoPath);
                 photo.setDateTaken(new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date(dateTakenMillis)));
@@ -411,108 +402,14 @@ public class MainActivity extends FragmentActivity implements PhotoAdapter.OnIte
         }
     }
 
-    private void checkPhotosAndNotify() {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-        String todayDate = sdf.format(new Date()); // Today's date in full format (yyyy-MM-dd)
-
-        Uri uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
-        String[] projection = {MediaStore.Images.Media.DATE_TAKEN, MediaStore.Images.Media.DATA};
-        String selection = MediaStore.Images.Media.DATE_TAKEN + " IS NOT NULL";
-        String sortOrder = MediaStore.Images.Media.DATE_TAKEN + " DESC";
-
-        Cursor cursor = getContentResolver().query(uri, projection, selection, null, sortOrder);
-        if (cursor != null) {
-            while (cursor.moveToNext()) {
-                long dateTakenMillis = cursor.getLong(0);
-                String photoDate = sdf.format(new Date(dateTakenMillis)); // Convert timestamp to yyyy-MM-dd
-                String photoPath = cursor.getString(1); // Get the file path of the photo
-
-                if (photoDate.substring(5).equals(todayDate.substring(5))) { // Compare MM-dd only
-                    // Calculate the number of years ago the photo was taken
-                    int yearsAgo = calculateYearsAgo(dateTakenMillis);
-
-                    if (yearsAgo > 0) {
-                        cursor.close();
-                        sendNotification(yearsAgo, photoPath, dateTakenMillis);
-                        return;
-                    }
-                }
-            }
-            cursor.close();
-        }
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent); // Update the intent
+        handleIntent(intent); // Handle the new intent
     }
 
-    private int calculateYearsAgo(long dateTakenMillis) {
-        Calendar photoDate = Calendar.getInstance();
-        photoDate.setTimeInMillis(dateTakenMillis);
-
-        Calendar today = Calendar.getInstance();
-
-        int yearsAgo = today.get(Calendar.YEAR) - photoDate.get(Calendar.YEAR);
-
-        // Adjust if the photo date is later in the year than today's date
-        if (today.get(Calendar.MONTH) < photoDate.get(Calendar.MONTH)) {
-            yearsAgo--;
-        } else if (today.get(Calendar.MONTH) == photoDate.get(Calendar.MONTH)) {
-            if (today.get(Calendar.DAY_OF_MONTH) < photoDate.get(Calendar.DAY_OF_MONTH)) {
-                yearsAgo--;
-            }
-        }
-
-        return yearsAgo;
-    }
-
-    private void sendNotification(int yearsAgo, String photoPath, long dateTakenMillis) {
-        Intent intent = new Intent(this, MainActivity.class);
-        intent.putExtra("photo_path", photoPath);
-        intent.putExtra("date_taken", dateTakenMillis);
-        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-    
-        PendingIntent pendingIntent = PendingIntent.getActivity(
-                this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-        );
-    
-        String notificationText = (yearsAgo == 1) ? 
-            "You took a photo on this date 1 year ago!" : 
-            "You took a photo on this date " + yearsAgo + " years ago!";
-    
-        // Load the photo as a Bitmap
-        Bitmap photoBitmap = BitmapFactory.decodeFile(photoPath);
-    
-        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_photo) // Small icon is still required
-                .setContentTitle("Photo Reminder")
-                .setContentText(notificationText)
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setContentIntent(pendingIntent)
-                .setAutoCancel(true);
-    
-        // FIX: If the photo is successfully loaded, use it in the notification
-        if (photoBitmap != null) {
-            builder.setLargeIcon(photoBitmap) // Use photo as large icon
-                    .setStyle(new NotificationCompat.BigPictureStyle()
-                    .bigPicture(photoBitmap) // Show photo in expanded notification
-                    .bigLargeIcon((Bitmap) null));  // Hide large icon when expanded
-        }
-    
-        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(this);
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
-            notificationManager.notify(NOTIFICATION_ID, builder.build());
-        }
-    }
-    
 
 
-    private void createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            CharSequence name = "Photo Reminder";
-            String description = "Reminds you of photos taken on the same date in previous years";
-            int importance = NotificationManager.IMPORTANCE_HIGH;
-            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
-            channel.setDescription(description);
 
-            NotificationManager notificationManager = getSystemService(NotificationManager.class);
-            notificationManager.createNotificationChannel(channel);
-        }
-    }
 }
