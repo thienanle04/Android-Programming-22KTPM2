@@ -40,7 +40,7 @@ public class SettingsFragment extends PreferenceFragmentCompat {
             boolean isLoggedIn = prefs.getBoolean("is_logged_in", false);
 
             if (isLoggedIn) {
-                googleSignInPref.setSummary("Đã đăng nhập");
+                googleSignInPref.setSummary("Đã đăng nhập với " + prefs.getString("user_email", ""));
             } else {
                 googleSignInPref.setSummary("Chưa đăng nhập");
             }
@@ -69,7 +69,7 @@ public class SettingsFragment extends PreferenceFragmentCompat {
     private void updateLoginStatus(boolean isLoggedIn) {
         Preference googleSignInPref = findPreference("google_sign_in");
         if (googleSignInPref != null) {
-            googleSignInPref.setSummary(isLoggedIn ? "Đã đăng nhập" : "Chưa đăng nhập");
+            googleSignInPref.setSummary(isLoggedIn ? "Đã đăng nhập với " + findPreference("user_email"): "Chưa đăng nhập");
         }
     }
 }

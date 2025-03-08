@@ -1,3 +1,19 @@
+import java.util.Properties
+import java.io.FileInputStream
+
+// Function to load properties from local.properties
+fun loadLocalProperties(): Properties {
+    val properties = Properties()
+    val localPropertiesFile = rootProject.file("local.properties")
+
+    if (localPropertiesFile.exists()) {
+        FileInputStream(localPropertiesFile).use { inputStream ->
+            properties.load(inputStream)
+        }
+    }
+    return properties
+}
+
 plugins {
     alias(libs.plugins.android.application)
     id("com.google.gms.google-services")
@@ -16,7 +32,19 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Load local.properties manually
+        val localProperties = loadLocalProperties()
+
+        val googleClientId = localProperties.getProperty("GOOGLE_CLIENT_ID", "")
+
+        buildConfigField("String", "GOOGLE_CLIENT_ID", "\"$googleClientId\"")
     }
+
+    buildFeatures {
+        buildConfig = true
+    }
+
 
     buildTypes {
         release {
