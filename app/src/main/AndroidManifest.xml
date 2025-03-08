@@ -9,6 +9,7 @@
         android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.SET_ALARM" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 
     <application
         android:enableOnBackInvokedCallback="true"
@@ -21,6 +22,8 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Group3"
         tools:targetApi="35">
+        <receiver android:name=".notification.NotificationReceiver"
+            android:exported="false"/>
         <activity
             android:name=".ui.main.MainActivity"
             android:exported="true"
