@@ -23,4 +23,8 @@
     <style name="MenuIcon">
         <item name="android:tint">@color/grey</item>
     </style>
+
+    <style name="NavButton">
+        <item name="android:tint">@color/white</item>
+    </style>
 </resources>

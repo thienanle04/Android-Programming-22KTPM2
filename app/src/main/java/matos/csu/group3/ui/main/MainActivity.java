@@ -22,6 +22,7 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.util.Log;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Button;
 import android.widget.EditText;
@@ -174,38 +175,6 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
     }
 
     private void showBigScreen(PhotoEntity photo) {
-//        // Hiển thị layout chứa ảnh lớn
-//        setContentView(R.layout.activity_display_single_photo);
-//
-//        // Ánh xạ các view trong layout solo_picture
-//        TextView txtSoloMsg = findViewById(R.id.txtSoloMsg);
-//        ImageView imgSoloPhoto = findViewById(R.id.imgSoloPhoto);
-//        Button btnSoloBack = findViewById(R.id.btnSoloBack);
-//        Button btnEdit = findViewById(R.id.btnEdit);
-//
-//        // Đặt caption và ảnh lớn
-//        txtSoloMsg.setText(photo.getDateTaken() + "X");
-//        Glide.with(this) // "this" là Context (Activity hoặc Fragment)
-//                .load(new File(photo.getFilePath())) // Load ảnh từ đường dẫn tệp
-//                .into(imgSoloPhoto);
-//
-//        btnEdit.setOnClickListener(v -> {
-//            Intent cropIntent = new Intent(this, CropAndRotateActivity.class);
-//            Log.d("CropActivity", "Image URI: " + Uri.parse(photo.getFilePath()));
-//            cropIntent.setData(Uri.fromFile(new File(photo.getFilePath())));
-//            cropIntent.putExtra("photoEntity", photo);
-//
-//            startActivity(cropIntent);
-//        });
-//
-//        // Xử lý sự kiện nút "GO BACK"
-//        btnSoloBack.setOnClickListener(v -> {
-//            // Quay lại layout chính (activity_main)
-//            setContentView(R.layout.activity_main);
-//
-//            // Khởi tạo lại các view và RecyclerView
-//            initializeViews();
-//        });
         Intent intent = new Intent(this, DisplaySinglePhotoActivity.class);
         intent.putExtra("photoEntity", photo);
         startActivity(intent);
@@ -503,7 +472,21 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
             notificationManager.notify(NOTIFICATION_ID, builder.build());
         }
     }
-    
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.main_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == R.id.menu_settings) {
+            startActivity(new Intent(this, SettingsActivity.class));
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
 
 
     private void createNotificationChannel() {

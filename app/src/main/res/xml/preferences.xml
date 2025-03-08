@@ -1,52 +1,17 @@
-<?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+    <Preference
+        android:key="google_sign_in"
+        android:title="Sign in with Google"
+        android:summary="Tap to sign in with your Google account" />
 
-    <!-- OneDrive Sync -->
     <SwitchPreferenceCompat
-        android:key="sync_onedrive"
-        android:title="Đồng bộ với OneDrive"
-        android:summary="Đồng bộ ảnh và video của bạn với OneDrive"
-        android:defaultValue="false"/>
+        app:key="notifications"
+        app:title="Enable message notifications"/>
 
-    <!-- View Options -->
-    <PreferenceCategory android:title="Tùy chọn dạng xem">
-        <SwitchPreferenceCompat
-            android:key="fullscreen_scroll"
-            android:title="Cuộn toàn màn hình"
-            android:defaultValue="true"/>
-
-        <SwitchPreferenceCompat
-            android:key="auto_play_motion"
-            android:title="Tự động phát ảnh chuyển động"
-            android:defaultValue="true"/>
-    </PreferenceCategory>
-
-    <!-- Album Management -->
-    <PreferenceCategory android:title="Album">
-        <SwitchPreferenceCompat
-            android:key="select_album"
-            android:title="Chọn album để hiển thị"
-            android:defaultValue="true"/>
-
-        <SwitchPreferenceCompat
-            android:key="merge_album"
-            android:title="Kết hợp album"
-            android:summary="Các album cùng tên sẽ được hiển thị dưới dạng một album duy nhất"
-            android:defaultValue="true"/>
-    </PreferenceCategory>
-
-    <!-- Other Options -->
-    <PreferenceCategory android:title="Khác">
-        <SwitchPreferenceCompat
-            android:key="trash"
-            android:title="Thùng rác"
-            android:summary="Giữ ảnh và video đã xóa trong 30 ngày"
-            android:defaultValue="true"/>
-
-        <SwitchPreferenceCompat
-            android:key="location_display"
-            android:title="Hiển thị tên địa điểm"
-            android:defaultValue="true"/>
-    </PreferenceCategory>
+    <Preference
+        app:key="feedback"
+        app:title="Send feedback"
+        app:summary="Report technical issues or suggest new features"/>
 
 </PreferenceScreen>

@@ -35,7 +35,7 @@ public class SettingsActivity extends AppCompatActivity {
     // Handle Back Button in Toolbar
     @Override
     public boolean onSupportNavigateUp() {
-        onBackPressed();
+        finish();
         return true;
     }
 }

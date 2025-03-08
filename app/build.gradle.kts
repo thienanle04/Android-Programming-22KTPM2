@@ -9,6 +9,7 @@ android {
 
     defaultConfig {
         applicationId = "matos.csu.group3"
+        manifestPlaceholders["appAuthRedirectScheme"] = "matos.csu.group3"
         minSdk = 29
         targetSdk = 35
         versionCode = 1
@@ -55,5 +56,6 @@ dependencies {
     implementation(libs.play.services.auth)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
-    implementation(libs.preference)
+    implementation(libs.preference.ktx)
+    implementation(libs.appauth.v0111)
 }
