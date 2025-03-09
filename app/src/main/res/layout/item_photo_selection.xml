@@ -16,6 +16,7 @@
         android:id="@+id/checkBox"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:visibility="gone"
         android:layout_alignTop="@id/imageView"
         android:layout_alignEnd="@id/imageView"
         android:layout_margin="2dp" />

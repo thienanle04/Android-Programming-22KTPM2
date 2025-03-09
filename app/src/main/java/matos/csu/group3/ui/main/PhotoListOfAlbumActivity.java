@@ -4,10 +4,11 @@ import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -32,20 +33,22 @@ import matos.csu.group3.data.local.entity.AlbumEntity;
 import matos.csu.group3.data.local.entity.PhotoEntity;
 import matos.csu.group3.repository.AlbumRepository;
 import matos.csu.group3.repository.PhotoRepository;
-import matos.csu.group3.ui.adapter.PhotoAdapter;
 import matos.csu.group3.ui.adapter.PhotoSelectionAdapter;
 
 public class PhotoListOfAlbumActivity extends AppCompatActivity implements PhotoSelectionAdapter.OnPhotoSelectedListener {
 
     private RecyclerView photoRecyclerView;
     private PhotoSelectionAdapter photoAdapter;
-    private TextView albumNameTextView;
     private  PhotoDao photoDao;
     private AlbumEntity album;
     private PhotoRepository photoRepository;
     private AlbumRepository albumRepository;
     private List<PhotoEntity> allPhotos;
     private int currentAlbumId;
+    private LinearLayout topNavigationBar;
+    private ImageButton btnBack;
+    private TextView tvSelectedCount;
+    private ImageButton btnSelectAll;
     private BottomNavigationView bottomNavigationView;
 
     @Override
@@ -54,8 +57,19 @@ public class PhotoListOfAlbumActivity extends AppCompatActivity implements Photo
         setContentView(R.layout.activity_photo_list);
 
         albumRepository = new AlbumRepository(getApplication());
-        albumNameTextView = findViewById(R.id.albumNameTextView);
         photoRecyclerView = findViewById(R.id.photoRecyclerView);
+        topNavigationBar = findViewById(R.id.topNavigationBar);
+        btnBack = findViewById(R.id.btnBack);
+        tvSelectedCount = findViewById(R.id.tvSelectedCount);
+        btnSelectAll = findViewById(R.id.btnSelectAll);
+        btnBack.setOnClickListener(v -> {
+            photoAdapter.setSelectionMode(false); // Tắt chế độ chọn ảnh
+            topNavigationBar.setVisibility(View.GONE); // Ẩn top navigation bar
+        });
+        btnSelectAll.setOnClickListener(v -> {
+            boolean isAllSelected = photoAdapter.isAllSelected();
+            photoAdapter.selectAll(!isAllSelected); // Đảo ngược trạng thái chọn
+        });
         photoRecyclerView.setLayoutManager(new LinearLayoutManager(this));
 
         Intent intent = getIntent();
@@ -63,14 +77,6 @@ public class PhotoListOfAlbumActivity extends AppCompatActivity implements Photo
 
 
         if (currentAlbumId != -1) {
-            albumRepository.getAlbumById(currentAlbumId).observe(this, albumEntity -> {
-                if (albumEntity != null) {
-                    albumNameTextView.setText(albumEntity.getName());
-                } else {
-                    // Xử lý trường hợp không tìm thấy album
-                    albumNameTextView.setText("Album không tồn tại");
-                }
-            });
 
             AppDatabase db = Room.databaseBuilder(getApplicationContext(), AppDatabase.class, "database-name").allowMainThreadQueries().build();
             photoDao = db.photoDao();
@@ -84,6 +90,7 @@ public class PhotoListOfAlbumActivity extends AppCompatActivity implements Photo
         btnAdd.setOnClickListener(v -> showPhotoSelectionDialog());
         // Ánh xạ view
         bottomNavigationView = findViewById(R.id.bottomNavigationView);
+        bottomNavigationView.setVisibility(View.GONE);
         bottomNavigationView.setOnItemSelectedListener(item -> {
             if (item.getItemId() == R.id.action_delete) {
                 // Gọi phương thức xóa ảnh
@@ -97,17 +104,19 @@ public class PhotoListOfAlbumActivity extends AppCompatActivity implements Photo
             else if(item.getItemId() == R.id.action_add){
                 return true;
             }
-            else if(item.getItemId() == R.id.action_settings){
-                return true;
-            }
-
             return false;
         });
     }
 
     private void loadPhotos(int albumId) {
         allPhotos = new ArrayList<>();
-        photoAdapter = new PhotoSelectionAdapter(allPhotos, this);
+        photoAdapter = new PhotoSelectionAdapter(allPhotos, this, false);
+        photoAdapter.setOnLongPressListener(() -> {
+            topNavigationBar.setVisibility(View.VISIBLE); // Hiển thị top navigation bar
+            updateSelectedCount();
+            bottomNavigationView.setVisibility(View.VISIBLE); // Hiển thị BottomNavigationView
+        });
+        photoAdapter.setOnSelectionChangeListener(this::updateSelectedCount);
         // Kiểm tra hướng màn hình
         int orientation = getResources().getConfiguration().orientation;
 
@@ -130,6 +139,13 @@ public class PhotoListOfAlbumActivity extends AppCompatActivity implements Photo
             }
         });
     }
+    private void updateSelectedCount() {
+        int selectedCount = photoAdapter.getSelectedCount();
+        if(selectedCount == 0){
+            tvSelectedCount.setText("Chọn Mục");
+        }
+        else tvSelectedCount.setText("Đã chọn " + selectedCount + " mục");
+    }
 
     @Override
     public void onPhotoSelected(PhotoEntity photo, boolean isSelected) {
@@ -139,14 +155,11 @@ public class PhotoListOfAlbumActivity extends AppCompatActivity implements Photo
     private void showPhotoSelectionDialog() {
         List<PhotoEntity> photosNotInAlbum = new ArrayList<>();
         try {
-             photosNotInAlbum = photoRepository.getPhotosNotInAlbum(currentAlbumId);
-            // Tiếp tục xử lý photosNotInAlbum
+            photosNotInAlbum = photoRepository.getPhotosNotInAlbum(currentAlbumId);
         } catch (InterruptedException e) {
-            // Xử lý khi luồng bị gián đoạn
             e.printStackTrace();
-            Thread.currentThread().interrupt(); // Đánh dấu luồng bị gián đoạn
+            Thread.currentThread().interrupt();
         } catch (ExecutionException e) {
-            // Xử lý khi có lỗi trong quá trình thực thi
             e.printStackTrace();
         }
 
@@ -154,17 +167,56 @@ public class PhotoListOfAlbumActivity extends AppCompatActivity implements Photo
         View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_select_photos, null);
         builder.setView(dialogView);
 
+        // Ánh xạ view
+        LinearLayout topNavigationBar = dialogView.findViewById(R.id.topNavigationBar);
+        ImageButton btnBack = dialogView.findViewById(R.id.btnBack);
+        TextView tvSelectedCount = dialogView.findViewById(R.id.tvSelectedCount);
+        tvSelectedCount.setText("Chon mục");
+        ImageButton btnSelectAll = dialogView.findViewById(R.id.btnSelectAll);
         RecyclerView dialogRecyclerView = dialogView.findViewById(R.id.photoRecyclerView);
+        Button btnAddSelected = dialogView.findViewById(R.id.btnAddSelected);
 
+        // Thiết lập RecyclerView
         dialogRecyclerView.setLayoutManager(new GridLayoutManager(this, 3));
-        PhotoSelectionAdapter adapter = new PhotoSelectionAdapter(photosNotInAlbum, this);
+        List<PhotoEntity> finalPhotosNotInAlbum = photosNotInAlbum;
+        PhotoSelectionAdapter adapter = new PhotoSelectionAdapter(photosNotInAlbum, (photo, isSelected) -> {
+            // Cập nhật số lượng ảnh đã chọn
+            int selectedCount = (int) finalPhotosNotInAlbum.stream().filter(PhotoEntity::isSelected).count();
+            if(selectedCount == 0){
+                tvSelectedCount.setText("Chon mục");
+            }
+            else
+                tvSelectedCount.setText("Đã chọn " + selectedCount + " mục");
+        }, true);
         dialogRecyclerView.setAdapter(adapter);
 
-        Button btnAddSelected = dialogView.findViewById(R.id.btnAddSelected);
+        topNavigationBar.setVisibility(View.VISIBLE);
         AlertDialog dialog = builder.create();
-        List<PhotoEntity> finalPhotosNotInAlbum = photosNotInAlbum;
+
+        // Xử lý nút Back
+        btnBack.setOnClickListener(v -> {
+            adapter.setSelectionMode(false); // Tắt chế độ chọn ảnh
+            topNavigationBar.setVisibility(View.GONE); // Ẩn topNavigationBar
+            dialog.dismiss();
+        });
+
+        // Xử lý nút Chọn Tất Cả
+        btnSelectAll.setOnClickListener(v -> {
+            boolean isAllSelected = adapter.isAllSelected();
+            adapter.selectAll(!isAllSelected); // Đảo ngược trạng thái chọn
+            int selectedCount = (int) finalPhotosNotInAlbum.stream().filter(PhotoEntity::isSelected).count();
+            if(selectedCount == 0){
+                tvSelectedCount.setText("Chon mục");
+            }
+            else
+                tvSelectedCount.setText("Đã chọn " + selectedCount + " mục");
+        });
+
+        // Xử lý nút Thêm Ảnh Đã Chọn
+
+        List<PhotoEntity> finalPhotosNotInAlbum1 = photosNotInAlbum;
         btnAddSelected.setOnClickListener(v -> {
-            List<PhotoEntity> selectedPhotos = finalPhotosNotInAlbum.stream()
+            List<PhotoEntity> selectedPhotos = finalPhotosNotInAlbum1.stream()
                     .filter(PhotoEntity::isSelected)
                     .collect(Collectors.toList());
             addPhotosToAlbum(selectedPhotos);
