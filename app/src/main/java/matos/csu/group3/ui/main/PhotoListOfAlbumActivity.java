@@ -65,6 +65,7 @@ public class PhotoListOfAlbumActivity extends AppCompatActivity implements Photo
         btnBack.setOnClickListener(v -> {
             photoAdapter.setSelectionMode(false); // Tắt chế độ chọn ảnh
             topNavigationBar.setVisibility(View.GONE); // Ẩn top navigation bar
+            bottomNavigationView.setVisibility(View.GONE);
         });
         btnSelectAll.setOnClickListener(v -> {
             boolean isAllSelected = photoAdapter.isAllSelected();
