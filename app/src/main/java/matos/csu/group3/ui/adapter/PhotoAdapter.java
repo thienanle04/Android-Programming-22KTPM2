@@ -3,6 +3,7 @@ package matos.csu.group3.ui.adapter;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CheckBox;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -27,10 +28,23 @@ public class PhotoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
 
     private List<ListItem> items = new ArrayList<>(); // Danh sách các mục (ngày hoặc ảnh)
     private final OnItemClickListener listener; // Listener cho sự kiện click
+    private final OnItemLongClickListener longClickListener;
 
-    public PhotoAdapter(List<ListItem> items, OnItemClickListener listener) {
+    private boolean selectionMode = false;
+    private SelectionChangeListener selectionChangeListener;
+
+    public interface SelectionChangeListener {
+        void onSelectionChange();
+    }
+
+    public void setSelectionChangeListener(SelectionChangeListener listener) {
+        this.selectionChangeListener = listener;
+    }
+
+    public PhotoAdapter(List<ListItem> items, OnItemClickListener listener, OnItemLongClickListener longClickListener) {
         this.items = items;
         this.listener = listener;
+        this.longClickListener = longClickListener;
     }
 
     @Override
@@ -50,7 +64,7 @@ public class PhotoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
             View view = inflater.inflate(R.layout.item_header, parent, false);
             return new DateHeaderViewHolder(view);
         } else {
-            View view = inflater.inflate(R.layout.item_photo, parent, false);
+            View view = inflater.inflate(R.layout.item_photo_selection, parent, false);
             return new PhotoViewHolder(view);
         }
     }
@@ -64,7 +78,8 @@ public class PhotoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
             PhotoItem photoItem = (PhotoItem) items.get(position);
             PhotoEntity photo = photoItem.getPhoto();
             if (photo != null) {
-                ((PhotoViewHolder) holder).bind(photo, listener);
+                ((PhotoViewHolder) holder).bind(photo, listener, longClickListener);
+                ((PhotoViewHolder) holder).checkBox.setVisibility(selectionMode ? View.VISIBLE : View.GONE);
             }
         }
     }
@@ -89,17 +104,23 @@ public class PhotoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
 
     public static class PhotoViewHolder extends RecyclerView.ViewHolder {
         private final ImageView imageView;
+        private final CheckBox checkBox;
 
         public PhotoViewHolder(@NonNull View itemView) {
             super(itemView);
-            imageView = itemView.findViewById(R.id.image_view);
+            imageView = itemView.findViewById(R.id.imageView);
+            checkBox = itemView.findViewById(R.id.checkBox);
         }
 
-        public void bind(PhotoEntity photo, OnItemClickListener listener) {
+            public void bind(PhotoEntity photo, OnItemClickListener listener, OnItemLongClickListener longClickListener) {
             Glide.with(itemView.getContext())
                     .load(photo.getFilePath())
                     .into(imageView);
             itemView.setOnClickListener(v -> listener.onItemClick(photo));
+            itemView.setOnLongClickListener(v -> {
+                longClickListener.onItemLongClick(photo);
+                return true; // Trả về true để chỉ định rằng sự kiện đã được xử lý
+            });
         }
     }
 
@@ -107,8 +128,41 @@ public class PhotoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
         void onItemClick(PhotoEntity photo);
     }
 
+    public interface OnItemLongClickListener {
+        void onItemLongClick(PhotoEntity photo);
+    }
+
     public void updateData(List<ListItem> newItems) {
         this.items = newItems;
         notifyDataSetChanged();
+    }
+    public void setSelectionMode(boolean isSelectionMode) {
+        this.selectionMode = isSelectionMode;
+        notifyDataSetChanged();
+    }
+    public void selectAll(boolean isSelected) {
+        for (ListItem item : items) {
+            if (item instanceof PhotoItem) {
+                PhotoItem photoItem = (PhotoItem) item;
+                photoItem.getPhoto().setSelected(isSelected);
+            }
+        }
+        notifyDataSetChanged(); // Cập nhật giao diện
+        if (selectionChangeListener != null) {
+            selectionChangeListener.onSelectionChange(); // Gọi callback
+        }
+    }
+
+    // Kiểm tra xem tất cả ảnh đã được chọn chưa
+    public boolean isAllSelected() {
+        for (ListItem item : items) {
+            if (item instanceof PhotoItem) {
+                PhotoItem photoItem = (PhotoItem) item;
+                if (!photoItem.getPhoto().isSelected()) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 }

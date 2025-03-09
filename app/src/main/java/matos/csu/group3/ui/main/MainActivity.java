@@ -157,7 +157,21 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
         photosByDate = groupPhotosByDate(filteredPhotos);
         groupedList = convertToGroupedList(photosByDate);
         // Cập nhật adapter với danh sách ảnh đã lọc
-        photoAdapter = new PhotoAdapter(groupedList, this);
+        photoAdapter = new PhotoAdapter(groupedList, new PhotoAdapter.OnItemClickListener() {
+            @Override
+            public void onItemClick(PhotoEntity photo) {
+                // Xử lý sự kiện click
+                showBigScreen(photo);
+            }
+        }, new PhotoAdapter.OnItemLongClickListener() {
+            @Override
+            public void onItemLongClick(PhotoEntity photo) {
+                // Xử lý sự kiện long press
+                photoAdapter.setSelectionMode(true); // Kích hoạt chế độ chọn
+                photoAdapter.notifyDataSetChanged();
+
+            }
+        });
         photoRecyclerView.setAdapter(photoAdapter);
     }
 
@@ -200,7 +214,20 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
         // Khởi tạo adapter với danh sách ảnh rỗng ban đầu
         photosByDate = new LinkedHashMap<>();
         groupedList = convertToGroupedList(photosByDate);
-        photoAdapter = new PhotoAdapter(groupedList, this);
+        photoAdapter = new PhotoAdapter(groupedList, new PhotoAdapter.OnItemClickListener() {
+            @Override
+            public void onItemClick(PhotoEntity photo) {
+                // Xử lý sự kiện click
+                showBigScreen(photo);
+            }
+        }, new PhotoAdapter.OnItemLongClickListener() {
+            @Override
+            public void onItemLongClick(PhotoEntity photo) {
+                // Xử lý sự kiện long press
+                photoAdapter.setSelectionMode(true); // Kích hoạt chế độ chọn
+                photoAdapter.notifyDataSetChanged();
+            }
+        });
 
         // Khởi tạo adapter cho album
         albumAdapter = new AlbumAdapter(new ArrayList<>(), this);
