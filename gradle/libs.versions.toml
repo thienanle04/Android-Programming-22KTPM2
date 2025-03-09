@@ -1,5 +1,7 @@
 [versions]
 agp = "8.7.3"
+appauth = "1"
+appauthVersion = "0.11.1"
 design = "28.0.0"
 firebaseBom = "33.10.0"
 glide = "4.13.2"
@@ -13,11 +15,16 @@ constraintlayout = "2.2.0"
 materialVersion = "1.6.1"
 playServicesAuth = "21.3.0"
 preference = "1.2.1"
+preferenceKtx = "1.2.1"
 roomRuntime = "2.6.1"
 roomCommonJvm = "2.7.0-alpha13"
 ucrop = "2.2.10"
+recyclerview = "1.4.0"
+lifecycle = "2.6.2"
 
 [libraries]
+appauth = { module = "net.openid:appauth", version.ref = "appauth" }
+appauth-v0111 = { module = "net.openid:appauth", version.ref = "appauthVersion" }
 compiler = { module = "com.github.bumptech.glide:compiler", version.ref = "glide" }
 design = { module = "com.android.support:design", version.ref = "design" }
 firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
@@ -33,10 +40,13 @@ constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayo
 material-v161 = { module = "com.google.android.material:material", version.ref = "materialVersion" }
 play-services-auth = { module = "com.google.android.gms:play-services-auth", version.ref = "playServicesAuth" }
 preference = { module = "androidx.preference:preference", version.ref = "preference" }
+preference-ktx = { module = "androidx.preference:preference-ktx", version.ref = "preferenceKtx" }
 room-compiler = { module = "androidx.room:room-compiler", version.ref = "roomRuntime" }
 room-runtime = { module = "androidx.room:room-runtime", version.ref = "roomRuntime" }
 room-common-jvm = { group = "androidx.room", name = "room-common-jvm", version.ref = "roomCommonJvm" }
 ucrop = { module = "com.github.yalantis:ucrop", version.ref = "ucrop" }
+recyclerview = { group = "androidx.recyclerview", name = "recyclerview", version.ref = "recyclerview" }
+lifecycle-livedata-ktx = { group = "androidx.lifecycle", name = "lifecycle-livedata-ktx", version.ref = "lifecycle" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

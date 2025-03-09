@@ -9,8 +9,10 @@
         android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.SET_ALARM" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 
     <application
+        android:enableOnBackInvokedCallback="true"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -20,6 +22,8 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Group3"
         tools:targetApi="35">
+        <receiver android:name=".notification.NotificationReceiver"
+            android:exported="false"/>
         <activity
             android:name=".ui.main.MainActivity"
             android:exported="true"
@@ -31,14 +35,22 @@
             </intent-filter>
         </activity>
         <activity android:name=".ui.main.SettingsActivity"
-            android:label="Cài đặt Bộ sưu tập"
-            android:parentActivityName=".ui.main.MainActivity">
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="matos.csu.group3"
+                    android:host="oauth2redirect" />
+            </intent-filter>
         </activity>
+
         <activity android:name=".ui.main.DisplaySinglePhotoActivity" />
         <activity
             android:name="com.yalantis.ucrop.UCropActivity"
             android:screenOrientation="portrait" />
         <activity android:name=".ui.editor.CropAndRotateActivity"/>
+        <activity android:name=".ui.main.PhotoListOfAlbumActivity"/>
     </application>
 
 </manifest>

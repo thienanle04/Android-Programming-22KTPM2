@@ -1,3 +1,19 @@
+import java.util.Properties
+import java.io.FileInputStream
+
+// Function to load properties from local.properties
+fun loadLocalProperties(): Properties {
+    val properties = Properties()
+    val localPropertiesFile = rootProject.file("local.properties")
+
+    if (localPropertiesFile.exists()) {
+        FileInputStream(localPropertiesFile).use { inputStream ->
+            properties.load(inputStream)
+        }
+    }
+    return properties
+}
+
 plugins {
     alias(libs.plugins.android.application)
     id("com.google.gms.google-services")
@@ -9,13 +25,26 @@ android {
 
     defaultConfig {
         applicationId = "matos.csu.group3"
+        manifestPlaceholders["appAuthRedirectScheme"] = "matos.csu.group3"
         minSdk = 29
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // Load local.properties manually
+        val localProperties = loadLocalProperties()
+
+        val googleClientId = localProperties.getProperty("GOOGLE_CLIENT_ID", "")
+
+        buildConfigField("String", "GOOGLE_CLIENT_ID", "\"$googleClientId\"")
     }
+
+    buildFeatures {
+        buildConfig = true
+    }
+
 
     buildTypes {
         release {
@@ -40,6 +69,7 @@ dependencies {
     implementation(libs.activity)
     implementation(libs.constraintlayout)
     implementation(libs.room.common.jvm)
+    implementation(libs.recyclerview)
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
@@ -55,5 +85,7 @@ dependencies {
     implementation(libs.play.services.auth)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.analytics)
-    implementation(libs.preference)
+    implementation(libs.preference.ktx)
+    implementation(libs.appauth.v0111)
+    implementation(libs.lifecycle.livedata.ktx)
 }
