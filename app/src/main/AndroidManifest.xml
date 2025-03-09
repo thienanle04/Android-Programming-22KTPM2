@@ -35,6 +35,7 @@
             android:screenOrientation="portrait"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar"/>
         <activity android:name=".ui.editor.CropAndRotateActivity"/>
+        <activity android:name=".ui.main.PhotoListOfAlbumActivity"/>
     </application>
 
 </manifest>

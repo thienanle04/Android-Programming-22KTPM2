@@ -13,6 +13,7 @@ materialVersion = "1.6.1"
 roomRuntime = "2.6.1"
 roomCommonJvm = "2.7.0-alpha13"
 ucrop = "2.2.10"
+recyclerview = "1.4.0"
 
 [libraries]
 compiler = { module = "com.github.bumptech.glide:compiler", version.ref = "glide" }
@@ -30,6 +31,7 @@ room-compiler = { module = "androidx.room:room-compiler", version.ref = "roomRun
 room-runtime = { module = "androidx.room:room-runtime", version.ref = "roomRuntime" }
 room-common-jvm = { group = "androidx.room", name = "room-common-jvm", version.ref = "roomCommonJvm" }
 ucrop = { module = "com.github.yalantis:ucrop", version.ref = "ucrop" }
+recyclerview = { group = "androidx.recyclerview", name = "recyclerview", version.ref = "recyclerview" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

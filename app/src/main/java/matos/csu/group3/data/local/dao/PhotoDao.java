@@ -1,6 +1,7 @@
 package matos.csu.group3.data.local.dao;
 
 import androidx.lifecycle.LiveData;
+import androidx.lifecycle.MutableLiveData;
 import androidx.room.Dao;
 import androidx.room.Delete;
 import androidx.room.Insert;
@@ -38,5 +39,14 @@ public interface PhotoDao {
     // Get a photo by ID
     @Query("SELECT * FROM photos WHERE id = :id")
     PhotoEntity getPhotoById(int id);
+    @Query("SELECT * FROM photos WHERE filePath = :filePath LIMIT 1")
+    PhotoEntity getPhotoByFilePath(String filePath);
+    // Lấy danh sách ảnh thuộc một album cụ thể
+    @Query("SELECT * FROM photos WHERE id IN (SELECT photoId FROM photo_album WHERE albumId = :albumId)")
+    LiveData<List<PhotoEntity>> getPhotosByAlbumId(int albumId);
+
+    // Lấy danh sách ảnh không thuộc album cụ thể
+    @Query("SELECT * FROM photos WHERE id NOT IN (SELECT photoId FROM photo_album WHERE albumId = :currentAlbumId)")
+    List<PhotoEntity> getPhotosNotInAlbum(int currentAlbumId);
 }
 

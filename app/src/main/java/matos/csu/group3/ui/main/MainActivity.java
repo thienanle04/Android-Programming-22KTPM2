@@ -1,5 +1,6 @@
 package matos.csu.group3.ui.main;
 
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -22,7 +23,9 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -31,6 +34,7 @@ import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.navigation.NavigationBarView;
 import com.yalantis.ucrop.UCrop;
 
@@ -56,19 +60,24 @@ import java.util.Calendar;
 import java.util.Date;
 
 import matos.csu.group3.R;
+import matos.csu.group3.data.local.entity.AlbumEntity;
 import matos.csu.group3.data.local.entity.HeaderItem;
 import matos.csu.group3.data.local.entity.ListItem;
 import matos.csu.group3.data.local.entity.PhotoEntity;
 import matos.csu.group3.data.local.entity.PhotoItem;
+import matos.csu.group3.ui.adapter.AlbumAdapter;
 import matos.csu.group3.ui.adapter.PhotoAdapter;
 import matos.csu.group3.ui.editor.CropAndRotateActivity;
+import matos.csu.group3.viewmodel.AlbumViewModel;
 import matos.csu.group3.viewmodel.PhotoViewModel;
 
-public class MainActivity extends FragmentActivity implements PhotoAdapter.OnItemClickListener {
+public class MainActivity extends FragmentActivity implements PhotoAdapter.OnItemClickListener, AlbumAdapter.OnItemClickListener {
 
     private PhotoViewModel photoViewModel;
+    private  AlbumViewModel albumViewModel;
     private RecyclerView photoRecyclerView;
     private PhotoAdapter photoAdapter;
+    private AlbumAdapter albumAdapter;
     private List<PhotoEntity> allPhotos; // Store the full list of photos
     private Map<String, List<PhotoEntity>> photosByDate; // Store photos grouped by date
     List<ListItem> groupedList;
@@ -124,6 +133,13 @@ public class MainActivity extends FragmentActivity implements PhotoAdapter.OnIte
         // Handle item click events here
         // For example, open a detailed view of the photo
         showBigScreen(photo);
+    }
+    @Override
+    public void onItemClick(AlbumEntity album) {
+        // Handle item click events here
+        Intent intent = new Intent(this, PhotoListOfAlbumActivity.class);
+        intent.putExtra("ALBUM_ID", album.getId());  // Pass the album ID
+        startActivity(intent);
     }
 
     // Method to filter photos based on search query
@@ -216,15 +232,18 @@ public class MainActivity extends FragmentActivity implements PhotoAdapter.OnIte
         groupedList = convertToGroupedList(photosByDate);
         photoAdapter = new PhotoAdapter(groupedList, this);
 
+        // Khởi tạo adapter cho album
+        albumAdapter = new AlbumAdapter(new ArrayList<>(), this);
+
         // Kiểm tra hướng màn hình
         int orientation = getResources().getConfiguration().orientation;
 
         // Thiết lập số cột dựa trên hướng màn hình
         int spanCount = (orientation == Configuration.ORIENTATION_LANDSCAPE) ? 6 : 3;
 
-        // Khởi tạo GridLayoutManager
-        GridLayoutManager layoutManager = new GridLayoutManager(this, spanCount);
-        layoutManager.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
+        // Khởi tạo GridLayoutManager cho ảnh
+        GridLayoutManager photoLayoutManager = new GridLayoutManager(this, spanCount);
+        photoLayoutManager.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
             @Override
             public int getSpanSize(int position) {
                 // Nếu là Header, chiếm toàn bộ hàng (span size = số cột)
@@ -236,8 +255,11 @@ public class MainActivity extends FragmentActivity implements PhotoAdapter.OnIte
             }
         });
 
-        // Thiết lập LayoutManager cho RecyclerView
-        photoRecyclerView.setLayoutManager(layoutManager);
+        // Khởi tạo GridLayoutManager cho album
+        GridLayoutManager albumLayoutManager = new GridLayoutManager(this, spanCount);
+
+        // Thiết lập LayoutManager mặc định cho RecyclerView (ảnh)
+        photoRecyclerView.setLayoutManager(photoLayoutManager);
         photoRecyclerView.setAdapter(photoAdapter);
 
         // Khởi tạo ViewModel và quan sát dữ liệu
@@ -257,6 +279,16 @@ public class MainActivity extends FragmentActivity implements PhotoAdapter.OnIte
             }
         });
 
+        // Khởi tạo ViewModel cho album
+        albumViewModel = new ViewModelProvider(this).get(AlbumViewModel.class);
+        albumViewModel.getAllAlbums().observe(this, new Observer<List<AlbumEntity>>() {
+            @Override
+            public void onChanged(List<AlbumEntity> albumEntities) {
+                // Cập nhật danh sách album
+                albumAdapter.updateData(albumEntities);
+            }
+        });
+
         // Khởi tạo SearchView và các sự kiện liên quan
         EditText searchEditText = findViewById(R.id.search_src_text);
         ImageView searchIcon = findViewById(R.id.search_mag_icon);
@@ -272,6 +304,7 @@ public class MainActivity extends FragmentActivity implements PhotoAdapter.OnIte
         });
 
         // Khởi tạo BottomNavigationView
+        FloatingActionButton btnAddAlbum = findViewById(R.id.addAlbumButton);
         BottomNavigationView bottomNavigationView = findViewById(R.id.bottomNavigationView);
 
         // Xử lý sự kiện khi chọn một mục trong BottomNavigationView
@@ -282,21 +315,66 @@ public class MainActivity extends FragmentActivity implements PhotoAdapter.OnIte
 
                 if (id == R.id.nav_photos) {
                     // Xử lý khi chọn "Ảnh"
+                    photoRecyclerView.setLayoutManager(photoLayoutManager);
+                    photoRecyclerView.setAdapter(photoAdapter);
+                    btnAddAlbum.setVisibility(View.GONE);
                     return true;
                 } else if (id == R.id.nav_albums) {
                     // Xử lý khi chọn "Album"
+                    photoRecyclerView.setLayoutManager(albumLayoutManager);  // Sử dụng GridLayoutManager cho album
+                    photoRecyclerView.setAdapter(albumAdapter);
+                    btnAddAlbum.setVisibility(View.VISIBLE);
+                    btnAddAlbum.setOnClickListener(v -> showAddAlbumDialog());
                     return true;
                 } else if (id == R.id.nav_menu) {
                     // Khi nhấn vào "Menu", hiển thị BottomSheetDialogFragment
                     BottomExtendedMenu popupMenu = new BottomExtendedMenu();
                     popupMenu.show(getSupportFragmentManager(), "PopupMenuDialogFragment");
-
                     return false;
                 }
 
                 return false;
             }
         });
+    }
+    private void showAddAlbumDialog() {
+        // Tạo một AlertDialog.Builder
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Thêm album mới");
+
+        // Tạo layout cho dialog
+        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_add_album, null);
+        builder.setView(dialogView);
+
+        // Lấy các view từ dialog layout
+        EditText edtAlbumName = dialogView.findViewById(R.id.edtAlbumName);
+
+        // Thiết lập nút "Thêm"
+        builder.setPositiveButton("Thêm", (dialog, which) -> {
+            String albumName = edtAlbumName.getText().toString().trim();
+            if (!albumName.isEmpty()) {
+                // Tạo album mới và thêm vào danh sách
+                AlbumEntity newAlbum = new AlbumEntity(albumName, getCurrentDate());
+                addAlbum(newAlbum);
+            } else {
+                Toast.makeText(this, "Vui lòng nhập tên album", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        // Thiết lập nút "Hủy"
+        builder.setNegativeButton("Hủy", (dialog, which) -> dialog.dismiss());
+
+        // Hiển thị dialog
+        builder.create().show();
+    }
+    private void addAlbum(AlbumEntity album) {
+        albumViewModel.insert(album);
+    }
+
+    // Phương thức lấy ngày hiện tại
+    private String getCurrentDate() {
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+        return sdf.format(new Date());
     }
 
     // Phương thức để nhóm ảnh theo ngày

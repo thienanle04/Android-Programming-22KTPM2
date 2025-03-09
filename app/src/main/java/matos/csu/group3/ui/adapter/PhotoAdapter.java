@@ -11,6 +11,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import matos.csu.group3.R;
@@ -24,7 +25,7 @@ public class PhotoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
     public static final int TYPE_HEADER = 0; // Loại view cho tiêu đề ngày
     public static final int TYPE_PHOTO = 1;  // Loại view cho ảnh
 
-    private List<ListItem> items; // Danh sách các mục (ngày hoặc ảnh)
+    private List<ListItem> items = new ArrayList<>(); // Danh sách các mục (ngày hoặc ảnh)
     private final OnItemClickListener listener; // Listener cho sự kiện click
 
     public PhotoAdapter(List<ListItem> items, OnItemClickListener listener) {
@@ -34,11 +35,10 @@ public class PhotoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
 
     @Override
     public int getItemViewType(int position) {
-        // Xác định loại view tại vị trí position
         if (items.get(position) instanceof HeaderItem) {
-            return TYPE_HEADER; // Nếu là HeaderItem -> tiêu đề ngày
+            return TYPE_HEADER;
         } else {
-            return TYPE_PHOTO; // Nếu là PhotoItem -> ảnh
+            return TYPE_PHOTO;
         }
     }
 
@@ -46,13 +46,10 @@ public class PhotoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         LayoutInflater inflater = LayoutInflater.from(parent.getContext());
-
         if (viewType == TYPE_HEADER) {
-            // Inflate layout cho tiêu đề ngày
             View view = inflater.inflate(R.layout.item_header, parent, false);
-                return new DateHeaderViewHolder(view);
+            return new DateHeaderViewHolder(view);
         } else {
-            // Inflate layout cho ảnh
             View view = inflater.inflate(R.layout.item_photo, parent, false);
             return new PhotoViewHolder(view);
         }
@@ -61,11 +58,9 @@ public class PhotoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
     @Override
     public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
         if (holder instanceof DateHeaderViewHolder) {
-            // Bind dữ liệu cho Header
             HeaderItem headerItem = (HeaderItem) items.get(position);
             ((DateHeaderViewHolder) holder).bind(headerItem.getDate());
         } else if (holder instanceof PhotoViewHolder) {
-            // Bind dữ liệu cho Photo
             PhotoItem photoItem = (PhotoItem) items.get(position);
             PhotoEntity photo = photoItem.getPhoto();
             if (photo != null) {
@@ -79,7 +74,6 @@ public class PhotoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
         return items.size();
     }
 
-    // ViewHolder cho tiêu đề ngày
     public static class DateHeaderViewHolder extends RecyclerView.ViewHolder {
         private final TextView dateTextView;
 
@@ -93,7 +87,6 @@ public class PhotoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
         }
     }
 
-    // ViewHolder cho ảnh
     public static class PhotoViewHolder extends RecyclerView.ViewHolder {
         private final ImageView imageView;
 
@@ -103,22 +96,19 @@ public class PhotoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
         }
 
         public void bind(PhotoEntity photo, OnItemClickListener listener) {
-            // Load ảnh bằng Glide
             Glide.with(itemView.getContext())
                     .load(photo.getFilePath())
                     .into(imageView);
-
-            // Xử lý sự kiện click
             itemView.setOnClickListener(v -> listener.onItemClick(photo));
         }
     }
 
-    // Interface để xử lý sự kiện click
     public interface OnItemClickListener {
         void onItemClick(PhotoEntity photo);
     }
+
     public void updateData(List<ListItem> newItems) {
         this.items = newItems;
-        notifyDataSetChanged(); // Cập nhật RecyclerView
+        notifyDataSetChanged();
     }
 }
