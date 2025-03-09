@@ -50,6 +50,7 @@
             android:name="com.yalantis.ucrop.UCropActivity"
             android:screenOrientation="portrait" />
         <activity android:name=".ui.editor.CropAndRotateActivity"/>
+        <activity android:name=".ui.main.PhotoListOfAlbumActivity"/>
     </application>
 
 </manifest>

@@ -3,6 +3,7 @@ package matos.csu.group3.data.local.entity;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 import java.io.Serializable;
+import java.util.Objects;
 
 @Entity(tableName = "photos")
 public class PhotoEntity implements Serializable{
@@ -24,6 +25,7 @@ public class PhotoEntity implements Serializable{
     private boolean isUploaded;       // Whether the photo is uploaded to Google Drive
     private boolean isSynced;         // Whether the photo is fully synced
 
+    private boolean selected;
     // Getters and Setters
 
     // Getter and Setter for id
@@ -141,6 +143,27 @@ public class PhotoEntity implements Serializable{
 
     public void setSynced(boolean synced) {
         isSynced = synced;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        PhotoEntity that = (PhotoEntity) o;
+        return id == that.id && Objects.equals(filePath, that.filePath);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, filePath);
+    }
+
+    public boolean isSelected() {
+        return this.selected;
+    }
+
+    public void setSelected(boolean isChecked) {
+        this.selected = isChecked;
     }
 }
 

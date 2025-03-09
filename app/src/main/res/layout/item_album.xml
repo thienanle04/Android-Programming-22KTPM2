@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:padding="8dp"
+    android:gravity="center">
+
+    <!-- ImageView để hiển thị hình ảnh thư mục -->
+    <androidx.appcompat.widget.AppCompatImageView
+        android:id="@+id/folderImageView"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:src="@drawable/icon_folder"
+        app:tint="?attr/colorOnBackground"
+        android:layout_gravity="center_horizontal"/>
+
+    <!-- Tên album -->
+    <TextView
+        android:id="@+id/albumNameTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Album Name"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginTop="8dp"/>
+</LinearLayout>

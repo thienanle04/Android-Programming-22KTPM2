@@ -19,6 +19,8 @@ preferenceKtx = "1.2.1"
 roomRuntime = "2.6.1"
 roomCommonJvm = "2.7.0-alpha13"
 ucrop = "2.2.10"
+recyclerview = "1.4.0"
+lifecycle = "2.6.2"
 
 [libraries]
 appauth = { module = "net.openid:appauth", version.ref = "appauth" }
@@ -43,6 +45,8 @@ room-compiler = { module = "androidx.room:room-compiler", version.ref = "roomRun
 room-runtime = { module = "androidx.room:room-runtime", version.ref = "roomRuntime" }
 room-common-jvm = { group = "androidx.room", name = "room-common-jvm", version.ref = "roomCommonJvm" }
 ucrop = { module = "com.github.yalantis:ucrop", version.ref = "ucrop" }
+recyclerview = { group = "androidx.recyclerview", name = "recyclerview", version.ref = "recyclerview" }
+lifecycle-livedata-ktx = { group = "androidx.lifecycle", name = "lifecycle-livedata-ktx", version.ref = "lifecycle" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

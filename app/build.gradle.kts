@@ -69,6 +69,7 @@ dependencies {
     implementation(libs.activity)
     implementation(libs.constraintlayout)
     implementation(libs.room.common.jvm)
+    implementation(libs.recyclerview)
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
@@ -86,4 +87,5 @@ dependencies {
     implementation(libs.firebase.analytics)
     implementation(libs.preference.ktx)
     implementation(libs.appauth.v0111)
+    implementation(libs.lifecycle.livedata.ktx)
 }

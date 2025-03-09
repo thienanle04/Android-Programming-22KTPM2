@@ -37,32 +37,44 @@
             android:height="48dp" />
 
         <!-- Icon search -->
-        <ImageView
+        <androidx.appcompat.widget.AppCompatImageView
             android:id="@+id/search_mag_icon"
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:layout_marginStart="8dp"
-            android:src="@drawable/ic_search"
-            style="@style/MenuIcon" />
+            app:tint="?attr/colorOnBackground"
+            android:src="@drawable/ic_search" />
 
         <!-- Icon Cloud -->
-        <ImageView
+        <androidx.appcompat.widget.AppCompatImageView
             android:id="@+id/cloud_icon"
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:layout_marginStart="8dp"
-            android:src="@drawable/ic_cloud"
-            style="@style/MenuIcon"/> <!-- Sử dụng icon cloud hoặc tải icon từ thư viện -->
+            app:tint="?attr/colorOnBackground"
+            android:src="@drawable/ic_cloud" /> <!-- Sử dụng icon cloud hoặc tải icon từ thư viện -->
 
         <!-- Nút 3 chấm (Menu Icon) -->
-        <ImageView
+        <androidx.appcompat.widget.AppCompatImageView
             android:id="@+id/menu_icon"
             android:layout_width="24dp"
             android:layout_height="24dp"
             android:layout_marginStart="8dp"
-            android:src="@drawable/ic_menu"
-            style="@style/MenuIcon" /> <!-- Sử dụng icon 3 chấm hoặc tải icon từ thư viện -->
+            app:tint="?attr/colorOnBackground"
+            android:src="@drawable/ic_menu" /> <!-- Sử dụng icon 3 chấm hoặc tải icon từ thư viện -->
     </LinearLayout>
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/addAlbumButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/icon_add"
+        android:visibility="gone"
+        app:backgroundTint="@color/white"
+        app:tint="@color/black"
+        app:layout_constraintBottom_toTopOf="@id/bottomNavigationView"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp" />
 
     <!-- RecyclerView -->
     <androidx.recyclerview.widget.RecyclerView
@@ -88,4 +100,5 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>
