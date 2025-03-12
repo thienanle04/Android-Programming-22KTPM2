@@ -21,4 +21,6 @@ public interface PhotoAlbumDao {
 
     @Query("SELECT * FROM photo_album WHERE photoId = :photoId")
     List<PhotoAlbum> getAlbumsByPhotoId(int photoId);
+    @Query("SELECT COUNT(*) FROM photo_album WHERE photoId = :photoId AND albumId = :albumId")
+    int countPhotoInAlbum(int photoId, int albumId);
 }

@@ -9,6 +9,8 @@ public class AlbumEntity {
     private int id;
     private String name;
     private String createdAt;
+    private Boolean isSelected = false;
+
     public AlbumEntity(){}
     public AlbumEntity(String name, String createdAt){
         this.name = name;
@@ -37,5 +39,11 @@ public class AlbumEntity {
 
     public void setCreatedAt(String createdAt) {
         this.createdAt = createdAt;
+    }
+    public void setSelected(Boolean isSelected){
+        this.isSelected = isSelected;
+    }
+    public Boolean isSelected(){
+        return this.isSelected;
     }
 }

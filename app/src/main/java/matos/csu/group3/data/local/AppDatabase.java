@@ -13,7 +13,7 @@ import matos.csu.group3.data.local.entity.PhotoAlbum;
 import matos.csu.group3.data.local.entity.PhotoEntity;
 import matos.csu.group3.data.local.entity.AlbumEntity;  // Import AlbumEntity
 
-@Database(entities = {PhotoEntity.class, AlbumEntity.class, PhotoAlbum.class}, version = 1, exportSchema = false)  // Thêm AlbumEntity vào danh sách entities
+@Database(entities = {PhotoEntity.class, AlbumEntity.class, PhotoAlbum.class}, version = 2, exportSchema = false)  // Thêm AlbumEntity vào danh sách entities
 public abstract class AppDatabase extends RoomDatabase {
     private static volatile AppDatabase INSTANCE;
     private static final String DATABASE_NAME = "photo_database";

@@ -23,6 +23,7 @@ public class PhotoSelectionAdapter extends RecyclerView.Adapter<PhotoSelectionAd
     private final OnPhotoSelectedListener listener;
     private OnLongPressListener longPressListener;
     private OnSelectionChangeListener selectionChangeListener;
+    private OnPhotoClickListener photoClickListener; // Thêm biến để lắng nghe sự kiện click
     private boolean isSelectionMode = false;
     private boolean showCheckBox;
 
@@ -52,6 +53,13 @@ public class PhotoSelectionAdapter extends RecyclerView.Adapter<PhotoSelectionAd
                 longPressListener.onLongPress(); // Gọi callback
             }
             return true;
+        });
+
+        // Xử lý sự kiện click
+        holder.itemView.setOnClickListener(v -> {
+            if (photoClickListener != null) {
+                photoClickListener.onPhotoClick(photo); // Gọi callback khi click vào ảnh
+            }
         });
 
         // Hiển thị/ẩn CheckBox dựa trên trạng thái chọn ảnh
@@ -131,12 +139,22 @@ public class PhotoSelectionAdapter extends RecyclerView.Adapter<PhotoSelectionAd
         void onSelectionChange();
     }
 
+    // Interface để lắng nghe sự kiện click vào ảnh
+    public interface OnPhotoClickListener {
+        void onPhotoClick(PhotoEntity photo);
+    }
+
     public void setOnLongPressListener(OnLongPressListener listener) {
         this.longPressListener = listener;
     }
 
     public void setOnSelectionChangeListener(OnSelectionChangeListener listener) {
         this.selectionChangeListener = listener;
+    }
+
+    // Phương thức để thiết lập listener cho sự kiện click
+    public void setOnPhotoClickListener(OnPhotoClickListener listener) {
+        this.photoClickListener = listener;
     }
 
     static class PhotoViewHolder extends RecyclerView.ViewHolder {
