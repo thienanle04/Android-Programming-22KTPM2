@@ -29,22 +29,16 @@ public class PhotoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
     private List<ListItem> items = new ArrayList<>(); // Danh sách các mục (ngày hoặc ảnh)
     private final OnItemClickListener listener; // Listener cho sự kiện click
     private final OnItemLongClickListener longClickListener;
-
+    private final OnPhotoSelectedListener onPhotoSelectedListener;
+    private OnSelectionChangeListener selectionChangeListener;
     private boolean selectionMode = false;
-    private SelectionChangeListener selectionChangeListener;
 
-    public interface SelectionChangeListener {
-        void onSelectionChange();
-    }
 
-    public void setSelectionChangeListener(SelectionChangeListener listener) {
-        this.selectionChangeListener = listener;
-    }
-
-    public PhotoAdapter(List<ListItem> items, OnItemClickListener listener, OnItemLongClickListener longClickListener) {
+    public PhotoAdapter(List<ListItem> items, OnItemClickListener listener, OnItemLongClickListener longClickListener, OnPhotoSelectedListener onPhotoSelectedListener) {
         this.items = items;
         this.listener = listener;
         this.longClickListener = longClickListener;
+        this.onPhotoSelectedListener = onPhotoSelectedListener;
     }
 
     @Override
@@ -78,7 +72,7 @@ public class PhotoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
             PhotoItem photoItem = (PhotoItem) items.get(position);
             PhotoEntity photo = photoItem.getPhoto();
             if (photo != null) {
-                ((PhotoViewHolder) holder).bind(photo, listener, longClickListener);
+                ((PhotoViewHolder) holder).bind(photo, listener, longClickListener, onPhotoSelectedListener);
                 ((PhotoViewHolder) holder).checkBox.setVisibility(selectionMode ? View.VISIBLE : View.GONE);
             }
         }
@@ -112,7 +106,7 @@ public class PhotoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
             checkBox = itemView.findViewById(R.id.checkBox);
         }
 
-            public void bind(PhotoEntity photo, OnItemClickListener listener, OnItemLongClickListener longClickListener) {
+            public void bind(PhotoEntity photo, OnItemClickListener listener, OnItemLongClickListener longClickListener, OnPhotoSelectedListener onPhotoSelectedListener) {
             Glide.with(itemView.getContext())
                     .load(photo.getFilePath())
                     .into(imageView);
@@ -121,17 +115,30 @@ public class PhotoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
                 longClickListener.onItemLongClick(photo);
                 return true; // Trả về true để chỉ định rằng sự kiện đã được xử lý
             });
+            checkBox.setChecked(photo.isSelected());
+            checkBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                photo.setSelected(isChecked);
+                onPhotoSelectedListener.onPhotoSelected(photo, isChecked);
+            });
         }
     }
 
     public interface OnItemClickListener {
         void onItemClick(PhotoEntity photo);
     }
-
+    public interface OnPhotoSelectedListener {
+        void onPhotoSelected(PhotoEntity photo, boolean isSelected);
+    }
     public interface OnItemLongClickListener {
         void onItemLongClick(PhotoEntity photo);
     }
 
+    public interface OnSelectionChangeListener {
+        void onSelectionChange();
+    }
+    public void setOnSelectionChangeListener(OnSelectionChangeListener listener) {
+        this.selectionChangeListener = listener;
+    }
     public void updateData(List<ListItem> newItems) {
         this.items = newItems;
         notifyDataSetChanged();
@@ -164,5 +171,17 @@ public class PhotoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
             }
         }
         return true;
+    }
+    public int getSelectedCount() {
+        int count = 0;
+        for (ListItem item : items) {
+            if (item instanceof PhotoItem) {
+                PhotoItem photoItem = (PhotoItem) item;
+                if (photoItem.getPhoto().isSelected()) {
+                    count++;
+                }
+            }
+        }
+        return count;
     }
 }
