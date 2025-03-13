@@ -11,20 +11,26 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import matos.csu.group3.R;
-import matos.csu.group3.data.local.entity.ListItem;
 import matos.csu.group3.data.local.entity.PhotoEntity;
 
 public class PhotoSelectionAdapter extends RecyclerView.Adapter<PhotoSelectionAdapter.PhotoViewHolder> {
 
     private List<PhotoEntity> photoList;
     private final OnPhotoSelectedListener listener;
+    private OnLongPressListener longPressListener;
+    private OnSelectionChangeListener selectionChangeListener;
+    private OnPhotoClickListener photoClickListener; // Thêm biến để lắng nghe sự kiện click
+    private boolean isSelectionMode = false;
+    private boolean showCheckBox;
 
-    public PhotoSelectionAdapter(List<PhotoEntity> photoList, OnPhotoSelectedListener listener) {
-        this.photoList = photoList;
+    public PhotoSelectionAdapter(List<PhotoEntity> photoList, OnPhotoSelectedListener listener, boolean showCheckBox) {
+        this.photoList = photoList != null ? photoList : new ArrayList<>();
         this.listener = listener;
+        this.showCheckBox = showCheckBox;
     }
 
     @NonNull
@@ -38,14 +44,117 @@ public class PhotoSelectionAdapter extends RecyclerView.Adapter<PhotoSelectionAd
     public void onBindViewHolder(@NonNull PhotoViewHolder holder, int position) {
         PhotoEntity photo = photoList.get(position);
         holder.bind(photo, listener);
+
+        // Xử lý sự kiện long press
+        holder.itemView.setOnLongClickListener(v -> {
+            isSelectionMode = true; // Bật chế độ chọn ảnh
+            notifyDataSetChanged(); // Cập nhật giao diện
+            if (longPressListener != null) {
+                longPressListener.onLongPress(); // Gọi callback
+            }
+            return true;
+        });
+
+        // Xử lý sự kiện click
+        holder.itemView.setOnClickListener(v -> {
+            if (photoClickListener != null) {
+                photoClickListener.onPhotoClick(photo); // Gọi callback khi click vào ảnh
+            }
+        });
+
+        // Hiển thị/ẩn CheckBox dựa trên trạng thái chọn ảnh
+        holder.checkBox.setVisibility(showCheckBox || isSelectionMode ? View.VISIBLE : View.GONE);
+        holder.checkBox.setChecked(photo.isSelected());
+        // Xử lý sự kiện khi CheckBox được chọn
+        holder.checkBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            photo.setSelected(isChecked);
+            listener.onPhotoSelected(photo, isChecked);
+            if (selectionChangeListener != null) {
+                selectionChangeListener.onSelectionChange(); // Gọi callback khi trạng thái chọn thay đổi
+            }
+        });
     }
 
     @Override
     public int getItemCount() {
-        if(photoList != null)
-            return photoList.size();
-        else
-            return 0;
+        return photoList.size();
+    }
+
+    // Chọn tất cả hoặc bỏ chọn tất cả ảnh
+    public void selectAll(boolean isSelected) {
+        for (PhotoEntity photo : photoList) {
+            photo.setSelected(isSelected);
+        }
+        notifyDataSetChanged(); // Cập nhật giao diện
+        if (selectionChangeListener != null) {
+            selectionChangeListener.onSelectionChange(); // Gọi callback
+        }
+    }
+
+    // Kiểm tra xem tất cả ảnh đã được chọn chưa
+    public boolean isAllSelected() {
+        for (PhotoEntity photo : photoList) {
+            if (!photo.isSelected()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // Lấy số lượng ảnh đã chọn
+    public int getSelectedCount() {
+        int count = 0;
+        for (PhotoEntity photo : photoList) {
+            if (photo.isSelected()) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+    // Tắt chế độ chọn ảnh
+    public void setSelectionMode(boolean isSelectionMode) {
+        this.isSelectionMode = isSelectionMode;
+        notifyDataSetChanged();
+    }
+
+    // Cập nhật dữ liệu
+    public void updateData(List<PhotoEntity> newItems) {
+        this.photoList = newItems != null ? newItems : new ArrayList<>();
+        notifyDataSetChanged();
+    }
+
+    // Interface để lắng nghe sự kiện chọn ảnh
+    public interface OnPhotoSelectedListener {
+        void onPhotoSelected(PhotoEntity photo, boolean isSelected);
+    }
+
+    // Interface để lắng nghe sự kiện long press
+    public interface OnLongPressListener {
+        void onLongPress();
+    }
+
+    // Interface để lắng nghe sự kiện thay đổi trạng thái chọn
+    public interface OnSelectionChangeListener {
+        void onSelectionChange();
+    }
+
+    // Interface để lắng nghe sự kiện click vào ảnh
+    public interface OnPhotoClickListener {
+        void onPhotoClick(PhotoEntity photo);
+    }
+
+    public void setOnLongPressListener(OnLongPressListener listener) {
+        this.longPressListener = listener;
+    }
+
+    public void setOnSelectionChangeListener(OnSelectionChangeListener listener) {
+        this.selectionChangeListener = listener;
+    }
+
+    // Phương thức để thiết lập listener cho sự kiện click
+    public void setOnPhotoClickListener(OnPhotoClickListener listener) {
+        this.photoClickListener = listener;
     }
 
     static class PhotoViewHolder extends RecyclerView.ViewHolder {
@@ -73,13 +182,5 @@ public class PhotoSelectionAdapter extends RecyclerView.Adapter<PhotoSelectionAd
                 listener.onPhotoSelected(photo, isChecked);
             });
         }
-    }
-
-    public interface OnPhotoSelectedListener {
-        void onPhotoSelected(PhotoEntity photo, boolean isSelected);
-    }
-    public void updateData(List<PhotoEntity> newItems) {
-        this.photoList = newItems;
-        notifyDataSetChanged();
     }
 }

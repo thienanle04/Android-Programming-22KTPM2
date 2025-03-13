@@ -6,15 +6,18 @@ import android.os.Handler;
 import android.os.Looper;
 import android.provider.MediaStore;
 import android.content.Context;
+import android.util.Log;
 import android.widget.Toast;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.Transformations;
 
+import java.io.File;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -58,7 +61,7 @@ public class PhotoRepository {
                     MediaStore.Images.Media.DATE_TAKEN
             };
 
-            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+            SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()); // Thêm HH:mm:ss để log thời gian chi tiết
 
             try (Cursor cursor = context.getContentResolver().query(
                     MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
@@ -71,8 +74,37 @@ public class PhotoRepository {
                     while (cursor.moveToNext()) {
                         String filePath = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA));
                         String name = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DISPLAY_NAME));
+
+                        // Lấy giá trị DATE_TAKEN từ Cursor
                         long dateTakenMillis = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATE_TAKEN));
-                        String dateTaken = sdf.format(new Date(dateTakenMillis));
+                        long dateAddedMillis = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATE_ADDED)) * 1000; // Chuyển từ giây sang mili-giây
+                        long lastModifiedMillis = new File(filePath).lastModified();
+
+                        // Log giá trị thô để debug
+                        Log.d("TAG", "File: " + name);
+                        Log.d("TAG", "dateTakenMillis (raw): " + dateTakenMillis);
+                        Log.d("TAG", "dateAddedMillis (raw): " + dateAddedMillis);
+                        Log.d("TAG", "lastModifiedMillis (raw): " + lastModifiedMillis);
+
+                        // Kiểm tra giá trị DATE_TAKEN
+                        if (dateTakenMillis <= 0 || dateTakenMillis < 946684800000L) { // 01/01/2000
+                            if (lastModifiedMillis > 0) {
+                                dateTakenMillis = lastModifiedMillis;
+                                Log.d("TAG", "Using lastModifiedMillis: " + lastModifiedMillis);
+                            } else {
+                                dateTakenMillis = dateAddedMillis;
+                                Log.d("TAG", "Using dateAddedMillis: " + dateAddedMillis);
+                            }
+                        }
+
+                        // Sử dụng Calendar và Date để xử lý ngày tháng
+                        Calendar calendar = Calendar.getInstance();
+                        calendar.setTimeInMillis(dateTakenMillis);
+                        Date date = calendar.getTime();
+                        String dateTaken = sdf.format(date);
+
+                        // Log ngày tháng đã định dạng
+                        Log.d("TAG", "Formatted date taken: " + dateTaken);
 
                         // Kiểm tra xem ảnh đã tồn tại trong cơ sở dữ liệu chưa
                         PhotoEntity existingPhoto = photoDao.getPhotoByFilePath(filePath);
@@ -82,29 +114,39 @@ public class PhotoRepository {
                             photo.setName(name);
                             photo.setFilePath(filePath);
                             photoList.add(photo);
+
+                            Log.d("TAG", "Added photo: " + name + " | Date taken: " + dateTaken);
                         }
                     }
-                    cursor.close();
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                Log.e("TAG", "Error loading photos", e);
             }
 
             // Sắp xếp danh sách ảnh theo ngày chụp (từ mới nhất đến cũ nhất)
-            photoList.sort((photo1, photo2) -> Long.compare(
-                    Long.parseLong(photo2.getDateTaken().replace("/", "")), // Chuyển đổi ngày thành số để so sánh
-                    Long.parseLong(photo1.getDateTaken().replace("/", ""))
-            ));
+            photoList.sort((photo1, photo2) -> {
+                try {
+                    Date date1 = sdf.parse(photo1.getDateTaken());
+                    Date date2 = sdf.parse(photo2.getDateTaken());
+                    return Long.compare(date2.getTime(), date1.getTime()); // Sắp xếp giảm dần
+                } catch (ParseException e) {
+                    Log.e("TAG", "Error parsing date", e);
+                    return 0;
+                }
+            });
 
             // Chỉ chèn các ảnh mới vào cơ sở dữ liệu
             if (!photoList.isEmpty()) {
                 photoDao.insertPhotos(photoList);
+                Log.d("TAG", "Inserted " + photoList.size() + " new photos into database");
             }
 
             // Cập nhật LiveData với danh sách ảnh mới nhất từ cơ sở dữ liệu
             allPhotos.postValue(photoDao.getAllPhotos().getValue());
         });
     }
+
+
 
     public void refreshPhotos() {
 //        executor.execute(this::loadPhotos);
@@ -128,8 +170,12 @@ public class PhotoRepository {
     public void addPhotosToAlbum(int albumId, List<PhotoEntity> photos) {
         executor.execute(() -> {
             for (PhotoEntity photo : photos) {
-                PhotoAlbum photoAlbum = new PhotoAlbum(photo.getId(), albumId);
-                photoAlbumDao.insert(photoAlbum);
+                // Kiểm tra xem ảnh đã tồn tại trong album chưa
+                int count = photoAlbumDao.countPhotoInAlbum(photo.getId(), albumId);
+                if (count == 0) { // Nếu ảnh chưa tồn tại trong album
+                    PhotoAlbum photoAlbum = new PhotoAlbum(photo.getId(), albumId);
+                    photoAlbumDao.insert(photoAlbum);
+                }
             }
         });
     }

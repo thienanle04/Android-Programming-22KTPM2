@@ -10,8 +10,4 @@
         android:icon="@drawable/icon_add"
         android:title="Thêm vào album" />
 
-    <item
-        android:id="@+id/action_settings"
-        android:icon="@drawable/ic_settings"
-        android:title="Cài đặt" />
 </menu>
