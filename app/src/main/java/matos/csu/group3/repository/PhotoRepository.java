@@ -72,7 +72,6 @@ public class PhotoRepository {
                         String filePath = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA));
                         String name = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DISPLAY_NAME));
                         long dateTakenMillis = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATE_TAKEN));
-
                         String dateTaken = sdf.format(new Date(dateTakenMillis));
 
                         // Kiểm tra xem ảnh đã tồn tại trong cơ sở dữ liệu chưa
