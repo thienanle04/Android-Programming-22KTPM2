@@ -15,6 +15,8 @@ import android.os.Build;
 import android.os.Bundle;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.constraintlayout.widget.ConstraintSet;
 import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.FragmentActivity;
 import androidx.activity.result.ActivityResultLauncher;
@@ -32,7 +34,9 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -77,6 +81,12 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
     private List<PhotoEntity> allPhotos; // Store the full list of photos
     private Map<String, List<PhotoEntity>> photosByDate; // Store photos grouped by date
     List<ListItem> groupedList;
+    private LinearLayout topNavigationBar;
+    private LinearLayout customSearchView;
+    private ImageButton btnBack;
+    private TextView tvSelectedCount;
+    private ImageButton btnSelectAll;
+    private ConstraintLayout constraintLayout;
 
 
     // Register the permission request launcher
@@ -85,17 +95,20 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
                 if (isGranted) {
                     // Permission granted, load photos
                     loadPhotos();
+
                 } else {
                     // Permission denied, show message or handle accordingly
                     Toast.makeText(this, "Permission denied! Cannot load photos.", Toast.LENGTH_SHORT).show();
                 }
             });
 
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
+        constraintLayout = findViewById(R.id.activity_main);
         // Initialize notification channel
         NotificationHelper.createNotificationChannel(this);
 
@@ -157,7 +170,32 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
         photosByDate = groupPhotosByDate(filteredPhotos);
         groupedList = convertToGroupedList(photosByDate);
         // Cập nhật adapter với danh sách ảnh đã lọc
-        photoAdapter = new PhotoAdapter(groupedList, this);
+        photoAdapter = new PhotoAdapter(groupedList, new PhotoAdapter.OnItemClickListener() {
+            @Override
+            public void onItemClick(PhotoEntity photo) {
+                // Xử lý sự kiện click
+                showBigScreen(photo);
+            }
+        }, new PhotoAdapter.OnItemLongClickListener() {
+            @Override
+            public void onItemLongClick(PhotoEntity photo) {
+                // Xử lý sự kiện long press
+                photoAdapter.setSelectionMode(true); // Kích hoạt chế độ chọn
+                topNavigationBar.setVisibility(View.VISIBLE);
+                customSearchView.setVisibility(View.GONE);
+                updateRecyclerViewConstraints(false);
+                updateSelectedCount();
+                photoAdapter.notifyDataSetChanged();
+
+            }
+        }, new PhotoAdapter.OnPhotoSelectedListener() {
+            @Override
+            public void onPhotoSelected(PhotoEntity photo, boolean isSelected) {
+                photo.setSelected(isSelected);
+                updateSelectedCount();
+            }
+        });
+        photoAdapter.setOnSelectionChangeListener(this::updateSelectedCount);
         photoRecyclerView.setAdapter(photoAdapter);
     }
 
@@ -167,6 +205,10 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
         if (photoViewModel != null) {
             photoViewModel.refreshPhotos();
         }
+    }
+    private void loadAlbums() {
+        if(albumViewModel != null)
+            albumViewModel.refreshAlbums();
     }
 
     @Override
@@ -194,14 +236,53 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
     }
 
     private void initializeViews() {
+        topNavigationBar = findViewById(R.id.topNavigationBar);
+        customSearchView = findViewById(R.id.customSearchView);
+        btnBack = findViewById(R.id.btnBack);
+        tvSelectedCount = findViewById(R.id.tvSelectedCount);
+        btnSelectAll = findViewById(R.id.btnSelectAll);
+        btnBack.setOnClickListener(v -> {
+            photoAdapter.setSelectionMode(false); // Tắt chế độ chọn ảnh
+            topNavigationBar.setVisibility(View.GONE); // Ẩn top navigation bar
+            customSearchView.setVisibility(View.VISIBLE);
+            updateRecyclerViewConstraints(true);
+            updateSelectedCount();
+        });
+        btnSelectAll.setOnClickListener(v -> {
+            boolean isAllSelected = photoAdapter.isAllSelected();
+            photoAdapter.selectAll(!isAllSelected); // Đảo ngược trạng thái chọn
+        });
         // Khởi tạo RecyclerView
         photoRecyclerView = findViewById(R.id.photoRecyclerView);
 
         // Khởi tạo adapter với danh sách ảnh rỗng ban đầu
         photosByDate = new LinkedHashMap<>();
         groupedList = convertToGroupedList(photosByDate);
-        photoAdapter = new PhotoAdapter(groupedList, this);
-
+        photoAdapter = new PhotoAdapter(groupedList, new PhotoAdapter.OnItemClickListener() {
+            @Override
+            public void onItemClick(PhotoEntity photo) {
+                // Xử lý sự kiện click
+                showBigScreen(photo);
+            }
+        }, new PhotoAdapter.OnItemLongClickListener() {
+            @Override
+            public void onItemLongClick(PhotoEntity photo) {
+                // Xử lý sự kiện long press
+                photoAdapter.setSelectionMode(true); // Kích hoạt chế độ chọn
+                topNavigationBar.setVisibility(View.VISIBLE);
+                customSearchView.setVisibility(View.GONE);
+                updateRecyclerViewConstraints(false);
+                updateSelectedCount();
+                photoAdapter.notifyDataSetChanged();
+            }
+        }, new PhotoAdapter.OnPhotoSelectedListener() {
+            @Override
+            public void onPhotoSelected(PhotoEntity photo, boolean isSelected) {
+                photo.setSelected(isSelected);
+                updateSelectedCount();
+            }
+        });
+        photoAdapter.setOnSelectionChangeListener(this::updateSelectedCount);
         // Khởi tạo adapter cho album
         albumAdapter = new AlbumAdapter(new ArrayList<>(), this);
 
@@ -237,15 +318,20 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
         photoViewModel.getAllPhotos().observe(this, new Observer<List<PhotoEntity>>() {
             @Override
             public void onChanged(List<PhotoEntity> photoEntities) {
-                // Cập nhật danh sách ảnh
-                allPhotos = photoEntities;
+                if (photoEntities != null && !photoEntities.isEmpty()) {
+                    // Cập nhật danh sách ảnh
+                    allPhotos = photoEntities;
 
-                // Nhóm ảnh theo ngày
-                photosByDate = groupPhotosByDate(photoEntities);
-                groupedList = convertToGroupedList(photosByDate);
+                    // Nhóm ảnh theo ngày
+                    photosByDate = groupPhotosByDate(photoEntities);
+                    groupedList = convertToGroupedList(photosByDate);
 
-                // Cập nhật adapter với danh sách ảnh mới
-                photoAdapter.updateData(groupedList);
+                    // Cập nhật adapter với danh sách ảnh mới
+                    photoAdapter.updateData(groupedList);
+
+                    // Chỉ gọi loadAlbums() sau khi ảnh đã có
+                    loadAlbums();
+                }
             }
         });
 
@@ -308,6 +394,13 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
         });
     }
 
+    private void updateSelectedCount() {
+        int selectedCount = photoAdapter.getSelectedCount();
+        if(selectedCount == 0){
+            tvSelectedCount.setText("Chọn Mục");
+        }
+        else tvSelectedCount.setText("Đã chọn " + selectedCount + " mục");
+    }
     private void showAddAlbumDialog() {
         // Tạo một AlertDialog.Builder
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -476,5 +569,30 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+    void updateRecyclerViewConstraints(boolean isSearchViewVisible) {
+        ConstraintSet constraintSet = new ConstraintSet();
+        constraintSet.clone(constraintLayout); // Sao chép các ràng buộc hiện tại
+
+        if (isSearchViewVisible) {
+            // Ràng buộc với customSearchView
+            constraintSet.connect(
+                    R.id.photoRecyclerView,
+                    ConstraintSet.TOP,
+                    R.id.customSearchView,
+                    ConstraintSet.BOTTOM
+            );
+        } else {
+            // Ràng buộc với topNavigationBar
+            constraintSet.connect(
+                    R.id.photoRecyclerView,
+                    ConstraintSet.TOP,
+                    R.id.topNavigationBar,
+                    ConstraintSet.BOTTOM
+            );
+        }
+
+        // Áp dụng các thay đổi
+        constraintSet.applyTo(constraintLayout);
     }
 }

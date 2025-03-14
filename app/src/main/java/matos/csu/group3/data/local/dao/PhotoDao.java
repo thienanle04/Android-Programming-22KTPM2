@@ -48,5 +48,7 @@ public interface PhotoDao {
     // Lấy danh sách ảnh không thuộc album cụ thể
     @Query("SELECT * FROM photos WHERE id NOT IN (SELECT photoId FROM photo_album WHERE albumId = :currentAlbumId)")
     List<PhotoEntity> getPhotosNotInAlbum(int currentAlbumId);
+    @Query("SELECT * FROM photos ORDER BY id DESC")
+    List<PhotoEntity> getAllPhotosSync();
 }
 

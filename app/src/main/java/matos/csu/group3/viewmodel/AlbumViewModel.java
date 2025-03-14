@@ -21,6 +21,9 @@ public class AlbumViewModel extends AndroidViewModel {
         allAlbums = albumRepository.getAllAlbums();
     }
 
+    public void refreshAlbums() {
+        albumRepository.refreshAlbums();
+    }
     public LiveData<List<AlbumEntity>> getAllAlbums() {
         return allAlbums;
     }

@@ -12,8 +12,8 @@ import matos.csu.group3.data.local.entity.AlbumEntity;
 @Dao  // Đảm bảo có @Dao
 public interface AlbumDao {
 
-    @Insert(onConflict = OnConflictStrategy.REPLACE)  // Đảm bảo có @Insert
-    void insert(AlbumEntity album);
+    @Insert(onConflict = OnConflictStrategy.IGNORE)  // Đảm bảo có @Insert
+    long insert(AlbumEntity album);
 
     @Update  // Đảm bảo có @Update
     void update(AlbumEntity album);
@@ -29,4 +29,6 @@ public interface AlbumDao {
 
     @Query("SELECT * FROM albums WHERE id = :albumId LIMIT 1")
     LiveData<AlbumEntity> getAlbumById(int albumId);
+    @Query("SELECT * FROM albums WHERE name = :albumName LIMIT 1")
+    AlbumEntity getAlbumByNameSync(String albumName);
 }

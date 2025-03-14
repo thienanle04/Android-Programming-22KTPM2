@@ -1,38 +1,135 @@
 package matos.csu.group3.repository;
 
 import android.app.Application;
+import android.content.ContentResolver;
+import android.database.Cursor;
+import android.net.Uri;
+import android.provider.MediaStore;
+import android.util.Log;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import matos.csu.group3.data.local.AppDatabase;
 import matos.csu.group3.data.local.dao.AlbumDao;
 import matos.csu.group3.data.local.dao.PhotoAlbumDao;
+import matos.csu.group3.data.local.dao.PhotoDao;
 import matos.csu.group3.data.local.entity.AlbumEntity;
+import matos.csu.group3.data.local.entity.PhotoAlbum;
+import matos.csu.group3.data.local.entity.PhotoEntity;
 
 public class AlbumRepository {
     private final AlbumDao albumDao;
     private final PhotoAlbumDao photoAlbumDao;
+    private final PhotoDao photoDao;
     private final MutableLiveData<List<AlbumEntity>> allAlbums;
     private final Executor executor;
+    private final Application application;
+    private PhotoRepository photoRepository;
 
     public AlbumRepository(Application application) {
+        this.application = application;
+        photoRepository = new PhotoRepository(application);
         AppDatabase database = AppDatabase.getInstance(application);
         albumDao = database.albumDao();
+        photoDao = database.photoDao();
         photoAlbumDao = database.photoAlbumDao();
         executor = Executors.newSingleThreadExecutor();  // Executor for background work
         allAlbums = new MutableLiveData<>();
         loadAlbums();  // Load albums when repository is created
     }
 
-    // Load albums from the database
+    // Load albums and photos from MediaStore
     private void loadAlbums() {
         executor.execute(() -> {
-            List<AlbumEntity> albumList = albumDao.getAllAlbumsSync();  // Synchronous call
-            allAlbums.postValue(albumList);  // Update LiveData on the main thread
+            List<PhotoEntity> photos = photoDao.getAllPhotosSync();
+            Log.d("Initial Photos", "size: " + photos.size());
+
+            Map<String, List<PhotoEntity>> albumPhotoMap = new HashMap<>();
+            for (PhotoEntity photo : photos) {
+                String path = photo.getFilePath().toLowerCase();
+                String albumName = extractAlbumNameFromPath(path);
+                if (albumName != null) {
+                    Log.d("AlbumDebug", "Album: " + albumName);
+                    albumPhotoMap.computeIfAbsent(albumName, k -> new ArrayList<>()).add(photo);
+                }
+            }
+            Log.d("AlbumMap", "Tổng số album: " + albumPhotoMap.size());
+
+            for (Map.Entry<String, List<PhotoEntity>> entry : albumPhotoMap.entrySet()) {
+                String albumName = entry.getKey();
+                List<PhotoEntity> albumPhotos = entry.getValue();
+
+                // Get or create the album
+                AlbumEntity album = albumDao.getAlbumByNameSync(albumName);
+                int albumId;
+                if (album == null) {
+                    album = new AlbumEntity();
+                    album.setName(albumName);
+                    albumId = (int) albumDao.insert(album);
+                    Log.e("AlbumInsert", "Inserted album ID: " + albumId);
+
+                    if (albumId == -1) {
+                        album = albumDao.getAlbumByNameSync(albumName);
+                        if (album != null) {
+                            albumId = album.getId();
+                        } else {
+                            Log.e("AlbumInsert", "Lỗi: Không thể lấy ID album.");
+                            continue;
+                        }
+                    }
+                } else {
+                    albumId = album.getId();
+                }
+
+                Log.d("AlbumFinal", "Album ID: " + albumId);
+
+                // 🔍 Kiểm tra albumId hợp lệ
+                if (albumId <= 0) {
+                    Log.e("PhotoInsertError", "Album ID không hợp lệ: " + albumId);
+                    continue;
+                }
+
+                // 🔍 Thêm kiểm tra xem `photo.getId()` có hợp lệ không
+                for (PhotoEntity photo : albumPhotos) {
+                    int photoId = photo.getId();
+
+                    if (photoId <= 0) {
+                        Log.e("PhotoInsertError", "Photo ID không hợp lệ: " + photoId);
+                        continue;
+                    }
+
+                    int count = photoAlbumDao.countPhotoInAlbum(photoId, albumId);
+                    if (count == 0) {
+                        PhotoAlbum photoAlbum = new PhotoAlbum(photoId, albumId);
+                        try {
+                            photoAlbumDao.insert(photoAlbum);
+                            Log.d("PhotoAlbumInsert", "Thêm ảnh ID " + photoId + " vào album ID " + albumId);
+                        } catch (Exception e) {
+                            Log.e("PhotoAlbumInsertError", "Lỗi khi chèn ảnh vào album: " + e.getMessage());
+                        }
+                    }
+                }
+            }
+
+            List<AlbumEntity> albumList = albumDao.getAllAlbumsSync();
+            allAlbums.postValue(albumList);
         });
+    }
+
+
+    private String extractAlbumNameFromPath(String path) {
+        File file = new File(path);
+        File parent = file.getParentFile(); // Lấy thư mục cha
+        return (parent != null) ? parent.getName() : null;
     }
 
     // Refresh the list of albums
