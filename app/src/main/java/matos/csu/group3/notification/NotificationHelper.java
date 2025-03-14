@@ -30,7 +30,7 @@ import matos.csu.group3.R;
 import matos.csu.group3.ui.main.MainActivity;
 
 public class NotificationHelper {
-    static int hour = 17, minute = 5, second = 0;
+    static int hour = 22, minute = 10, second = 0;
 
     private static final String CHANNEL_ID = "photo_reminder_channel";
     private static final int NOTIFICATION_ID = 1001;
@@ -134,6 +134,9 @@ public class NotificationHelper {
         PendingIntent pendingIntent = PendingIntent.getBroadcast(
                 context, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
         );
+
+        // Cancel any existing alarm to prevent duplicates
+        alarmManager.cancel(pendingIntent);
 
         // Set the time to 10:30 AM GMT+7
         Calendar calendar = Calendar.getInstance();
