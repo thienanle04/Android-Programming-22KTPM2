@@ -1,9 +1,13 @@
 package matos.csu.group3.data.local.entity;
 
 import androidx.room.Entity;
+import androidx.room.Index;
 import androidx.room.PrimaryKey;
 
-@Entity(tableName = "albums")  // Đảm bảo tên bảng là "albums"
+@Entity(
+        tableName = "albums",
+        indices = {@Index(name = "index_album_name", value = {"name"}, unique = true)}
+)  // Đảm bảo tên bảng là "albums"
 public class AlbumEntity {
     @PrimaryKey(autoGenerate = true)
     private int id;

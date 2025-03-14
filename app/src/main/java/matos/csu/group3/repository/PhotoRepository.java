@@ -80,20 +80,12 @@ public class PhotoRepository {
                         long dateAddedMillis = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATE_ADDED)) * 1000; // Chuyển từ giây sang mili-giây
                         long lastModifiedMillis = new File(filePath).lastModified();
 
-                        // Log giá trị thô để debug
-                        Log.d("TAG", "File: " + name);
-                        Log.d("TAG", "dateTakenMillis (raw): " + dateTakenMillis);
-                        Log.d("TAG", "dateAddedMillis (raw): " + dateAddedMillis);
-                        Log.d("TAG", "lastModifiedMillis (raw): " + lastModifiedMillis);
-
                         // Kiểm tra giá trị DATE_TAKEN
                         if (dateTakenMillis <= 0 || dateTakenMillis < 946684800000L) { // 01/01/2000
                             if (lastModifiedMillis > 0) {
                                 dateTakenMillis = lastModifiedMillis;
-                                Log.d("TAG", "Using lastModifiedMillis: " + lastModifiedMillis);
                             } else {
                                 dateTakenMillis = dateAddedMillis;
-                                Log.d("TAG", "Using dateAddedMillis: " + dateAddedMillis);
                             }
                         }
 
@@ -103,9 +95,6 @@ public class PhotoRepository {
                         Date date = calendar.getTime();
                         String dateTaken = sdf.format(date);
 
-                        // Log ngày tháng đã định dạng
-                        Log.d("TAG", "Formatted date taken: " + dateTaken);
-
                         // Kiểm tra xem ảnh đã tồn tại trong cơ sở dữ liệu chưa
                         PhotoEntity existingPhoto = photoDao.getPhotoByFilePath(filePath);
                         if (existingPhoto == null) {
@@ -114,8 +103,6 @@ public class PhotoRepository {
                             photo.setName(name);
                             photo.setFilePath(filePath);
                             photoList.add(photo);
-
-                            Log.d("TAG", "Added photo: " + name + " | Date taken: " + dateTaken);
                         }
                     }
                 }

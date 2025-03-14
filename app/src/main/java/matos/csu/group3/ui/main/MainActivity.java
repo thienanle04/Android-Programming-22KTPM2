@@ -95,11 +95,14 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
                 if (isGranted) {
                     // Permission granted, load photos
                     loadPhotos();
+
                 } else {
                     // Permission denied, show message or handle accordingly
                     Toast.makeText(this, "Permission denied! Cannot load photos.", Toast.LENGTH_SHORT).show();
                 }
             });
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -202,6 +205,10 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
         if (photoViewModel != null) {
             photoViewModel.refreshPhotos();
         }
+    }
+    private void loadAlbums() {
+        if(albumViewModel != null)
+            albumViewModel.refreshAlbums();
     }
 
     @Override
@@ -311,15 +318,20 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
         photoViewModel.getAllPhotos().observe(this, new Observer<List<PhotoEntity>>() {
             @Override
             public void onChanged(List<PhotoEntity> photoEntities) {
-                // Cập nhật danh sách ảnh
-                allPhotos = photoEntities;
+                if (photoEntities != null && !photoEntities.isEmpty()) {
+                    // Cập nhật danh sách ảnh
+                    allPhotos = photoEntities;
 
-                // Nhóm ảnh theo ngày
-                photosByDate = groupPhotosByDate(photoEntities);
-                groupedList = convertToGroupedList(photosByDate);
+                    // Nhóm ảnh theo ngày
+                    photosByDate = groupPhotosByDate(photoEntities);
+                    groupedList = convertToGroupedList(photosByDate);
 
-                // Cập nhật adapter với danh sách ảnh mới
-                photoAdapter.updateData(groupedList);
+                    // Cập nhật adapter với danh sách ảnh mới
+                    photoAdapter.updateData(groupedList);
+
+                    // Chỉ gọi loadAlbums() sau khi ảnh đã có
+                    loadAlbums();
+                }
             }
         });
 
