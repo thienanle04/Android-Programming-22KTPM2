@@ -136,13 +136,6 @@ public class CropAndRotateActivity extends AppCompatActivity {
         PhotoDao photoDao = db.photoDao();
 
         new Thread(() -> {
-            if (photoEntity.getId() > 0) {
-                photoDao.update(photoEntity);
-            }
-            else {
-                photoDao.insert(photoEntity);
-            }
-
             try {
                 File originalFile = new File(photoEntity.getFilePath());
                 if (!originalFile.exists()) {
@@ -151,9 +144,10 @@ public class CropAndRotateActivity extends AppCompatActivity {
                 }
 
                 File publicDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
-                File publicFile = new File(publicDir, "MyApp_" + originalFile.getName());
+                File publicFile = new File(publicDir, "Memoria_" + originalFile.getName());
+
                 FileInputStream inStream = new FileInputStream(originalFile);
-                FileOutputStream outStream = new FileOutputStream(publicFile);
+                FileOutputStream outStream = new FileOutputStream(originalFile);
                 byte[] buffer = new byte[1024];
                 int length;
                 while ((length = inStream.read(buffer)) > 0) {
@@ -162,11 +156,17 @@ public class CropAndRotateActivity extends AppCompatActivity {
                 inStream.close();
                 outStream.close();
 
+                long originalTimestamp = originalFile.lastModified();
+                publicFile.setLastModified(originalTimestamp);
+
                 photoEntity.setFilePath(publicFile.getAbsolutePath());
+
                 if (photoEntity.getId() > 0) {
                     photoDao.update(photoEntity);
                 }
-
+                else {
+                    photoDao.insert(photoEntity);
+                }
                 // Scan the new file
                 MediaScannerConnection.scanFile(
                         this,
