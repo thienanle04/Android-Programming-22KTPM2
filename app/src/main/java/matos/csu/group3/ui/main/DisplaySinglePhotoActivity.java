@@ -6,12 +6,15 @@ import android.os.Bundle;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.bumptech.glide.Glide;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 import matos.csu.group3.R;
 import matos.csu.group3.data.local.entity.PhotoEntity;
@@ -21,7 +24,7 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
 
     private ImageView imgSoloPhoto;
     private TextView txtSoloMsg;
-    private Button btnSoloBack, btnEdit;
+    private Button btnSoloBack, btnEdit, btnShare;
     private PhotoEntity photo;
 
     @Override
@@ -34,6 +37,7 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
         txtSoloMsg = findViewById(R.id.txtSoloMsg);
         btnSoloBack = findViewById(R.id.btnSoloBack);
         btnEdit = findViewById(R.id.btnEdit);
+        btnShare = findViewById(R.id.btnShare);
 
         // Lấy dữ liệu từ Intent
         Intent intent = getIntent();
@@ -61,5 +65,19 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
 
         // Nút quay lại
         btnSoloBack.setOnClickListener(v -> finish());
+
+        // Nút chia sẻ ảnh
+        btnShare.setOnClickListener(v -> {
+            if (photo != null) {
+                // Create a list with the single photo
+                List<PhotoEntity> photos = new ArrayList<>();
+                photos.add(photo);
+
+                // Call the sharePhotosViaMessenger method
+                PhotoListOfAlbumActivity.sharePhotosViaPackage(DisplaySinglePhotoActivity.this, photos);
+            } else {
+                Toast.makeText(this, "Không có ảnh để chia sẻ", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 }

@@ -18,6 +18,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.constraintlayout.widget.ConstraintSet;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.FileProvider;
 import androidx.fragment.app.FragmentActivity;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -264,11 +265,24 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
             photoAdapter.selectAll(!isAllSelected); // Đảo ngược trạng thái chọn
         });
         bottomNavigationSelectionView.setOnItemSelectedListener(item -> {
-           if(item.getItemId() == R.id.action_add){
+            if (item.getItemId() == R.id.action_add) {
                 showAlbumSelectionDialog();
                 return true;
-           }
-           return false;
+            } else if (item.getItemId() == R.id.action_share) {
+                // Handle share action
+                List<PhotoEntity> selectedPhotos = allPhotos.stream()
+                        .filter(PhotoEntity::isSelected)
+                        .collect(Collectors.toList());
+
+                if (!selectedPhotos.isEmpty()) {
+                    // Call the static method from PhotoListOfAlbumActivity
+                    PhotoListOfAlbumActivity.sharePhotosViaPackage(MainActivity.this, selectedPhotos);
+                } else {
+                    Toast.makeText(this, "Vui lòng chọn ít nhất một ảnh để chia sẻ", Toast.LENGTH_SHORT).show();
+                }
+                return true;
+            }
+            return false;
         });
         // Khởi tạo RecyclerView
         photoRecyclerView = findViewById(R.id.photoRecyclerView);

@@ -1,6 +1,7 @@
 package matos.csu.group3.ui.main;
 
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.net.Uri;
@@ -125,7 +126,7 @@ public class PhotoListOfAlbumActivity extends AppCompatActivity implements Photo
                         .filter(PhotoEntity::isSelected)
                         .collect(Collectors.toList());
                 if (!selectedPhotos.isEmpty()) {
-                    sharePhotosViaMessenger(selectedPhotos);
+                    sharePhotosViaPackage(this, selectedPhotos);
                 } else {
                     Toast.makeText(this, "Vui lòng chọn ít nhất một ảnh để chia sẻ", Toast.LENGTH_SHORT).show();
                 }
@@ -365,7 +366,7 @@ public class PhotoListOfAlbumActivity extends AppCompatActivity implements Photo
         startActivity(intent);
     }
 
-    private void sharePhotosViaMessenger(List<PhotoEntity> photos) {
+    public static void sharePhotosViaPackage(Context context, List<PhotoEntity> photos) {
         // Create a list of URIs for the selected photos
         ArrayList<Uri> photoUris = new ArrayList<>();
         for (PhotoEntity photo : photos) {
@@ -378,7 +379,7 @@ public class PhotoListOfAlbumActivity extends AppCompatActivity implements Photo
 
             // Generate a URI for the file
             try {
-                Uri photoUri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", photoFile);
+                Uri photoUri = FileProvider.getUriForFile(context, context.getPackageName() + ".fileprovider", photoFile);
                 photoUris.add(photoUri);
             } catch (IllegalArgumentException e) {
                 continue; // Skip this file
@@ -387,7 +388,7 @@ public class PhotoListOfAlbumActivity extends AppCompatActivity implements Photo
 
         // Check if any URIs were generated
         if (photoUris.isEmpty()) {
-            Toast.makeText(this, "Không có ảnh hợp lệ để chia sẻ", Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, "Không có ảnh hợp lệ để chia sẻ", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -410,10 +411,10 @@ public class PhotoListOfAlbumActivity extends AppCompatActivity implements Photo
 
         // Fallback: Open any app that can handle the share intent
         shareIntent.setPackage(null); // Remove the package restriction
-        if (shareIntent.resolveActivity(getPackageManager()) != null) {
-            startActivity(Intent.createChooser(shareIntent, "Chia sẻ ảnh"));
+        if (shareIntent.resolveActivity(context.getPackageManager()) != null) {
+            context.startActivity(Intent.createChooser(shareIntent, "Chia sẻ ảnh"));
         } else {
-            Toast.makeText(this, "Không có ứng dụng hỗ trợ chia sẻ ảnh", Toast.LENGTH_SHORT).show();
+            Toast.makeText(context, "Không có ứng dụng hỗ trợ chia sẻ ảnh", Toast.LENGTH_SHORT).show();
         }
     }
 }
