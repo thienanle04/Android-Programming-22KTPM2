@@ -81,6 +81,8 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
     private List<PhotoEntity> allPhotos; // Store the full list of photos
     private Map<String, List<PhotoEntity>> photosByDate; // Store photos grouped by date
     List<ListItem> groupedList;
+    BottomNavigationView bottomNavigationView;
+    BottomNavigationView bottomNavigationSelectionView;
     private LinearLayout topNavigationBar;
     private LinearLayout customSearchView;
     private ImageButton btnBack;
@@ -109,6 +111,8 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         constraintLayout = findViewById(R.id.activity_main);
+        bottomNavigationView = findViewById(R.id.bottomNavigationView);
+        bottomNavigationSelectionView = findViewById(R.id.bottomNavigationSelectionView);
         // Initialize notification channel
         NotificationHelper.createNotificationChannel(this);
 
@@ -183,6 +187,8 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
                 photoAdapter.setSelectionMode(true); // Kích hoạt chế độ chọn
                 topNavigationBar.setVisibility(View.VISIBLE);
                 customSearchView.setVisibility(View.GONE);
+                bottomNavigationSelectionView.setVisibility(View.VISIBLE);
+                bottomNavigationView.setVisibility(View.GONE);
                 updateRecyclerViewConstraints(false);
                 updateSelectedCount();
                 photoAdapter.notifyDataSetChanged();
@@ -192,7 +198,6 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
             @Override
             public void onPhotoSelected(PhotoEntity photo, boolean isSelected) {
                 photo.setSelected(isSelected);
-                updateSelectedCount();
             }
         });
         photoAdapter.setOnSelectionChangeListener(this::updateSelectedCount);
@@ -245,8 +250,9 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
             photoAdapter.setSelectionMode(false); // Tắt chế độ chọn ảnh
             topNavigationBar.setVisibility(View.GONE); // Ẩn top navigation bar
             customSearchView.setVisibility(View.VISIBLE);
+            bottomNavigationSelectionView.setVisibility(View.GONE);
+            bottomNavigationView.setVisibility(View.VISIBLE);
             updateRecyclerViewConstraints(true);
-            updateSelectedCount();
         });
         btnSelectAll.setOnClickListener(v -> {
             boolean isAllSelected = photoAdapter.isAllSelected();
@@ -271,6 +277,8 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
                 photoAdapter.setSelectionMode(true); // Kích hoạt chế độ chọn
                 topNavigationBar.setVisibility(View.VISIBLE);
                 customSearchView.setVisibility(View.GONE);
+                bottomNavigationSelectionView.setVisibility(View.VISIBLE);
+                bottomNavigationView.setVisibility(View.GONE);
                 updateRecyclerViewConstraints(false);
                 updateSelectedCount();
                 photoAdapter.notifyDataSetChanged();
@@ -279,7 +287,6 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
             @Override
             public void onPhotoSelected(PhotoEntity photo, boolean isSelected) {
                 photo.setSelected(isSelected);
-                updateSelectedCount();
             }
         });
         photoAdapter.setOnSelectionChangeListener(this::updateSelectedCount);

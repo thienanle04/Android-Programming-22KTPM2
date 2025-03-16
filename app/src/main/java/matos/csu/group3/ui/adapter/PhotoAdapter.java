@@ -1,5 +1,6 @@
 package matos.csu.group3.ui.adapter;
 
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -74,6 +75,17 @@ public class PhotoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
             if (photo != null) {
                 ((PhotoViewHolder) holder).bind(photo, listener, longClickListener, onPhotoSelectedListener);
                 ((PhotoViewHolder) holder).checkBox.setVisibility(selectionMode ? View.VISIBLE : View.GONE);
+                ((PhotoViewHolder) holder).checkBox.setChecked(photo.isSelected());
+                ((PhotoViewHolder) holder).checkBox.setOnCheckedChangeListener(null);
+                // Xử lý sự kiện khi CheckBox được chọn
+                ((PhotoViewHolder) holder).checkBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
+                    photo.setSelected(isChecked);
+                    onPhotoSelectedListener.onPhotoSelected(photo, isChecked);
+                    if (selectionChangeListener != null) {
+                        selectionChangeListener.onSelectionChange(); // Gọi callback khi trạng thái chọn thay đổi
+                    }
+                    Log.d("RecyclerViewDebug", "Position: " + position + ", isSelected: " + photo.isSelected());
+                });
             }
         }
     }
@@ -106,7 +118,7 @@ public class PhotoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
             checkBox = itemView.findViewById(R.id.checkBox);
         }
 
-            public void bind(PhotoEntity photo, OnItemClickListener listener, OnItemLongClickListener longClickListener, OnPhotoSelectedListener onPhotoSelectedListener) {
+        public void bind(PhotoEntity photo, OnItemClickListener listener, OnItemLongClickListener longClickListener, OnPhotoSelectedListener onPhotoSelectedListener) {
             Glide.with(itemView.getContext())
                     .load(photo.getFilePath())
                     .into(imageView);
@@ -115,7 +127,9 @@ public class PhotoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
                 longClickListener.onItemLongClick(photo);
                 return true; // Trả về true để chỉ định rằng sự kiện đã được xử lý
             });
+            checkBox.setOnCheckedChangeListener(null); // Đảm bảo không có sự kiện cũ
             checkBox.setChecked(photo.isSelected());
+
             checkBox.setOnCheckedChangeListener((buttonView, isChecked) -> {
                 photo.setSelected(isChecked);
                 onPhotoSelectedListener.onPhotoSelected(photo, isChecked);
