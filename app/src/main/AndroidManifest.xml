@@ -26,6 +26,15 @@
         tools:targetApi="35">
         <receiver android:name=".notification.NotificationReceiver"
             android:exported="false"/>
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
         <activity
             android:name=".ui.main.MainActivity"
             android:exported="true"

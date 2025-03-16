@@ -10,4 +10,8 @@
         android:icon="@drawable/icon_add"
         android:title="Thêm vào album" />
 
+    <item
+        android:id="@+id/action_share"
+        android:icon="@drawable/icon_share"
+        android:title="Chia sẻ" />
 </menu>

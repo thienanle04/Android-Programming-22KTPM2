@@ -3,6 +3,7 @@ package matos.csu.group3.ui.main;
 import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.res.Configuration;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -13,6 +14,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.content.FileProvider;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.GridLayoutManager;
@@ -23,6 +25,7 @@ import androidx.room.Room;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -104,16 +107,28 @@ public class PhotoListOfAlbumActivity extends AppCompatActivity implements Photo
         bottomNavigationView.setVisibility(View.GONE);
         bottomNavigationView.setOnItemSelectedListener(item -> {
             if (item.getItemId() == R.id.action_delete) {
-                // Gọi phương thức xóa ảnh
+                // Handle delete action
                 List<PhotoEntity> selectedPhotos = allPhotos.stream()
                         .filter(PhotoEntity::isSelected)
                         .collect(Collectors.toList());
-                if(!selectedPhotos.isEmpty())
+                if (!selectedPhotos.isEmpty()) {
                     showDeleteConfirmationDialog();
+                }
                 return true;
-            }
-            else if(item.getItemId() == R.id.action_add){
+            } else if (item.getItemId() == R.id.action_add) {
+                // Handle add to album action
                 showAlbumSelectionDialog();
+                return true;
+            } else if (item.getItemId() == R.id.action_share) {
+                // Handle share action
+                List<PhotoEntity> selectedPhotos = allPhotos.stream()
+                        .filter(PhotoEntity::isSelected)
+                        .collect(Collectors.toList());
+                if (!selectedPhotos.isEmpty()) {
+                    sharePhotosViaMessenger(selectedPhotos);
+                } else {
+                    Toast.makeText(this, "Vui lòng chọn ít nhất một ảnh để chia sẻ", Toast.LENGTH_SHORT).show();
+                }
                 return true;
             }
             return false;
@@ -348,5 +363,57 @@ public class PhotoListOfAlbumActivity extends AppCompatActivity implements Photo
         Intent intent = new Intent(this, DisplaySinglePhotoActivity.class);
         intent.putExtra("photoEntity", photo);
         startActivity(intent);
+    }
+
+    private void sharePhotosViaMessenger(List<PhotoEntity> photos) {
+        // Create a list of URIs for the selected photos
+        ArrayList<Uri> photoUris = new ArrayList<>();
+        for (PhotoEntity photo : photos) {
+            File photoFile = new File(photo.getFilePath());
+
+            // Check if the file exists and can be read
+            if (!photoFile.exists() || !photoFile.canRead()) {
+                continue; // Skip this file
+            }
+
+            // Generate a URI for the file
+            try {
+                Uri photoUri = FileProvider.getUriForFile(this, getPackageName() + ".fileprovider", photoFile);
+                photoUris.add(photoUri);
+            } catch (IllegalArgumentException e) {
+                continue; // Skip this file
+            }
+        }
+
+        // Check if any URIs were generated
+        if (photoUris.isEmpty()) {
+            Toast.makeText(this, "Không có ảnh hợp lệ để chia sẻ", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        // Create an intent to share the photos
+        Intent shareIntent;
+        if (photoUris.size() == 1) {
+            // Use ACTION_SEND for a single file
+            shareIntent = new Intent(Intent.ACTION_SEND);
+            shareIntent.setType("image/*");
+            shareIntent.putExtra(Intent.EXTRA_STREAM, photoUris.get(0));
+        } else {
+            // Use ACTION_SEND_MULTIPLE for multiple files
+            shareIntent = new Intent(Intent.ACTION_SEND_MULTIPLE);
+            shareIntent.setType("image/*");
+            shareIntent.putParcelableArrayListExtra(Intent.EXTRA_STREAM, photoUris);
+        }
+
+        // Grant temporary read permission to the receiving app
+        shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+
+        // Fallback: Open any app that can handle the share intent
+        shareIntent.setPackage(null); // Remove the package restriction
+        if (shareIntent.resolveActivity(getPackageManager()) != null) {
+            startActivity(Intent.createChooser(shareIntent, "Chia sẻ ảnh"));
+        } else {
+            Toast.makeText(this, "Không có ứng dụng hỗ trợ chia sẻ ảnh", Toast.LENGTH_SHORT).show();
+        }
     }
 }
