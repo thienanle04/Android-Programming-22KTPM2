@@ -1,43 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:gravity="center"
     android:padding="8dp">
 
-    <!-- LinearLayout chứa ImageView và TextView -->
-    <LinearLayout
+    <!-- ImageView để hiển thị hình ảnh album -->
+    <ImageView
+        android:id="@+id/folderImageView"
         android:layout_width="match_parent"
+        android:layout_height="120dp"
+        android:scaleType="centerCrop"
+        android:adjustViewBounds="true"
+        android:importantForAccessibility="yes"
+        android:clipToOutline="true"/>
+
+    <!-- Tên album -->
+    <TextView
+        android:id="@+id/albumNameTextView"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:gravity="center">
+        android:text="Album Name"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginTop="8dp"/>
 
-        <!-- ImageView để hiển thị hình ảnh thư mục -->
-        <androidx.appcompat.widget.AppCompatImageView
-            android:id="@+id/folderImageView"
-            android:layout_width="100dp"
-            android:layout_height="100dp"
-            android:src="@drawable/icon_folder"
-            app:tint="?attr/colorOnBackground"
-            android:layout_gravity="center_horizontal"/>
-
-        <!-- Tên album -->
-        <TextView
-            android:id="@+id/albumNameTextView"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Album Name"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:gravity="center"
-            android:layout_marginTop="8dp"/>
-    </LinearLayout>
-
-    <!-- CheckBox ở góc trên bên phải -->
+    <!-- CheckBox ở góc trên bên phải (ẩn theo mặc định) -->
     <CheckBox
         android:id="@+id/checkBox"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="top|end"
         android:visibility="gone" /> <!-- Mặc định ẩn -->
-</FrameLayout>
+
+</LinearLayout>

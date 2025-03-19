@@ -38,7 +38,7 @@ public interface PhotoDao {
 
     // Get a photo by ID
     @Query("SELECT * FROM photos WHERE id = :id")
-    PhotoEntity getPhotoById(int id);
+    LiveData<PhotoEntity> getPhotoById(int id);
     @Query("SELECT * FROM photos WHERE filePath = :filePath LIMIT 1")
     PhotoEntity getPhotoByFilePath(String filePath);
     // Lấy danh sách ảnh thuộc một album cụ thể

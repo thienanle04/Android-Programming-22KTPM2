@@ -51,6 +51,7 @@ public class PhotoListOfAlbumActivity extends AppCompatActivity implements Photo
     private AlbumEntity album;
     private PhotoRepository photoRepository;
     private AlbumRepository albumRepository;
+    private  AlbumViewModel albumViewModel;
     private List<PhotoEntity> allPhotos;
     private int currentAlbumId;
     private LinearLayout topNavigationBar;
@@ -72,6 +73,7 @@ public class PhotoListOfAlbumActivity extends AppCompatActivity implements Photo
         setContentView(R.layout.activity_photo_list);
 
         albumRepository = new AlbumRepository(getApplication());
+        albumViewModel = new ViewModelProvider(this).get(AlbumViewModel.class);
         photoRecyclerView = findViewById(R.id.photoRecyclerView);
         topNavigationBar = findViewById(R.id.topNavigationBar);
         btnBack = findViewById(R.id.btnBack);
@@ -268,7 +270,7 @@ public class PhotoListOfAlbumActivity extends AppCompatActivity implements Photo
                 // Xử lý sự kiện click
 
             }
-        });
+        }, albumViewModel, this);
 
         // Lấy danh sách các album từ repository
         AlbumViewModel albumViewModel = new ViewModelProvider(this).get(AlbumViewModel.class);

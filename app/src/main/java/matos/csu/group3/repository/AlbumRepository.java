@@ -50,8 +50,8 @@ public class AlbumRepository {
     // Load albums and photos from MediaStore
     private void loadAlbums() {
         executor.execute(() -> {
+            // 1. Load và xử lý các album từ MediaStore như bình thường
             List<PhotoEntity> photos = photoDao.getAllPhotosSync();
-            Log.d("Initial Photos", "size: " + photos.size());
 
             Map<String, List<PhotoEntity>> albumPhotoMap = new HashMap<>();
             for (PhotoEntity photo : photos) {
@@ -62,7 +62,6 @@ public class AlbumRepository {
                     albumPhotoMap.computeIfAbsent(albumName, k -> new ArrayList<>()).add(photo);
                 }
             }
-            Log.d("AlbumMap", "Tổng số album: " + albumPhotoMap.size());
 
             for (Map.Entry<String, List<PhotoEntity>> entry : albumPhotoMap.entrySet()) {
                 String albumName = entry.getKey();
@@ -90,15 +89,11 @@ public class AlbumRepository {
                     albumId = album.getId();
                 }
 
-                Log.d("AlbumFinal", "Album ID: " + albumId);
-
-                // 🔍 Kiểm tra albumId hợp lệ
                 if (albumId <= 0) {
                     Log.e("PhotoInsertError", "Album ID không hợp lệ: " + albumId);
                     continue;
                 }
 
-                // 🔍 Thêm kiểm tra xem `photo.getId()` có hợp lệ không
                 for (PhotoEntity photo : albumPhotos) {
                     int photoId = photo.getId();
 
@@ -120,10 +115,24 @@ public class AlbumRepository {
                 }
             }
 
+            // 2. Kiểm tra và tạo album "Favourite" sau khi đã load xong các album khác
+            String favouriteAlbumName = "Favourite";
+            AlbumEntity favAlbum = albumDao.getAlbumByNameSync(favouriteAlbumName);
+            if (favAlbum == null) {
+                favAlbum = new AlbumEntity();
+                favAlbum.setName(favouriteAlbumName);
+                long favAlbumId = albumDao.insert(favAlbum);
+                Log.d("FavouriteAlbum", "Tạo album Favourite ID: " + favAlbumId);
+            } else {
+                Log.d("FavouriteAlbum", "Album Favourite đã tồn tại ID: " + favAlbum.getId());
+            }
+
+            // 3. Cập nhật lên LiveData
             List<AlbumEntity> albumList = albumDao.getAllAlbumsSync();
             allAlbums.postValue(albumList);
         });
     }
+
 
 
     private String extractAlbumNameFromPath(String path) {
@@ -173,5 +182,11 @@ public class AlbumRepository {
             // Xóa ảnh khỏi album (ví dụ: cập nhật albumId của ảnh về null hoặc xóa khỏi bảng trung gian)
             photoAlbumDao.deletePhotoFromAlbum(photoId, albumId);
         });
+    }
+    public LiveData<PhotoEntity> getFirstPhotoOfAlbum(int albumId) {
+        return photoAlbumDao.getFirstPhotoOfAlbum(albumId);
+    }
+    public LiveData<List<PhotoAlbum>> getPhotosByAlbumId(int albumId){
+        return photoAlbumDao.getPhotosByAlbumId(albumId);
     }
 }

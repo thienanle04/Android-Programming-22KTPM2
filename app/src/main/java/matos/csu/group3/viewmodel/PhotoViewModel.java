@@ -37,4 +37,7 @@ public class PhotoViewModel extends AndroidViewModel {
     public LiveData<List<PhotoEntity>> getAllPhotos() {
         return allPhotos;
     }
+    public LiveData<PhotoEntity> getPhotoById(int photoId) {
+        return repository.getPhotoById(photoId);
+    }
 }

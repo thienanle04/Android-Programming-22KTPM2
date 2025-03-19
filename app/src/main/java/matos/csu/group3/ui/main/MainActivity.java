@@ -119,6 +119,9 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
         bottomNavigationView = findViewById(R.id.bottomNavigationView);
         bottomNavigationSelectionView = findViewById(R.id.bottomNavigationSelectionView);
         photoRepository = new PhotoRepository(getApplication());
+        photoViewModel = new ViewModelProvider(this).get(PhotoViewModel.class);
+        albumViewModel = new ViewModelProvider(this).get(AlbumViewModel.class);
+
         // Initialize notification channel
         NotificationHelper.createNotificationChannel(this);
 
@@ -317,7 +320,7 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
         });
         photoAdapter.setOnSelectionChangeListener(this::updateSelectedCount);
         // Khởi tạo adapter cho album
-        albumAdapter = new AlbumAdapter(new ArrayList<>(), this);
+        albumAdapter = new AlbumAdapter(new ArrayList<>(), this, albumViewModel, this);
 
         // Kiểm tra hướng màn hình
         int orientation = getResources().getConfiguration().orientation;
@@ -347,7 +350,6 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
         photoRecyclerView.setAdapter(photoAdapter);
 
         // Khởi tạo ViewModel và quan sát dữ liệu
-        photoViewModel = new ViewModelProvider(this).get(PhotoViewModel.class);
         photoViewModel.getAllPhotos().observe(this, new Observer<List<PhotoEntity>>() {
             @Override
             public void onChanged(List<PhotoEntity> photoEntities) {
@@ -369,7 +371,6 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
         });
 
         // Khởi tạo ViewModel cho album
-        albumViewModel = new ViewModelProvider(this).get(AlbumViewModel.class);
         albumViewModel.getAllAlbums().observe(this, new Observer<List<AlbumEntity>>() {
             @Override
             public void onChanged(List<AlbumEntity> albumEntities) {
@@ -445,7 +446,7 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
                 // Xử lý sự kiện click
 
             }
-        });
+        },albumViewModel, this);
 
         // Lấy danh sách các album từ repository
         AlbumViewModel albumViewModel = new ViewModelProvider(this).get(AlbumViewModel.class);

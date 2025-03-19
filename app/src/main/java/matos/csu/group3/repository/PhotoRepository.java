@@ -211,5 +211,7 @@ public class PhotoRepository {
             return photosList;
         });
     }
-
+    public LiveData<PhotoEntity> getPhotoById (int photoId) {
+        return photoDao.getPhotoById(photoId);
+    }
 }
