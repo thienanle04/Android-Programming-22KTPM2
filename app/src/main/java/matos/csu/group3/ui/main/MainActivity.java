@@ -64,6 +64,7 @@ import matos.csu.group3.R;
 import matos.csu.group3.data.local.entity.AlbumEntity;
 import matos.csu.group3.data.local.entity.HeaderItem;
 import matos.csu.group3.data.local.entity.ListItem;
+import matos.csu.group3.data.local.entity.PhotoAlbum;
 import matos.csu.group3.data.local.entity.PhotoEntity;
 import matos.csu.group3.data.local.entity.PhotoItem;
 import matos.csu.group3.repository.PhotoRepository;
@@ -282,6 +283,19 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
                     PhotoListOfAlbumActivity.sharePhotosViaPackage(MainActivity.this, selectedPhotos);
                 } else {
                     Toast.makeText(this, "Vui lòng chọn ít nhất một ảnh để chia sẻ", Toast.LENGTH_SHORT).show();
+                }
+                return true;
+            } else if (item.getItemId() == R.id.action_add_fav){
+                List<PhotoEntity> selectedPhotos = allPhotos.stream()
+                        .filter(PhotoEntity::isSelected)
+                        .collect(Collectors.toList());
+                if (!selectedPhotos.isEmpty()) {
+                    photoViewModel.addPhotosToFavourite(selectedPhotos);
+                    Toast.makeText(this, "Đã thêm " + selectedPhotos.size() + " ảnh vào yêu thích", Toast.LENGTH_SHORT).show();
+                    // Cập nhật RecyclerView hoặc giao diện khác nếu cần
+                    loadAlbums(); // Ví dụ: Tải lại danh sách album
+                } else {
+                    Toast.makeText(this, "Không có ảnh nào được chọn", Toast.LENGTH_SHORT).show();
                 }
                 return true;
             }

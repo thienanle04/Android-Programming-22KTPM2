@@ -17,6 +17,7 @@ import androidx.lifecycle.ViewModelStoreOwner;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.MultiTransformation;
 import com.bumptech.glide.load.resource.bitmap.CenterCrop;
 import com.bumptech.glide.load.resource.bitmap.RoundedCorners;
 import com.bumptech.glide.request.RequestOptions;
@@ -97,9 +98,13 @@ public class AlbumAdapter extends RecyclerView.Adapter<AlbumAdapter.AlbumViewHol
                         // Load ảnh vào ImageView bằng Glide
                         Glide.with(holder.itemView.getContext())
                                 .load(new File(photoEntity.getFilePath()))
-                                .apply(RequestOptions.bitmapTransform(new CenterCrop())) // Crop ảnh trước khi bo góc
-                                .apply(RequestOptions.bitmapTransform(new RoundedCorners(50))) // Bo góc sau khi đã crop
-                                .placeholder(R.drawable.ic_album) // Ảnh mặc định
+                                .apply(new RequestOptions()
+                                        .transform(new MultiTransformation<>(
+                                                new CenterCrop(), // Crop ảnh
+                                                new RoundedCorners(50) // Bo góc
+                                        ))
+                                        .placeholder(R.drawable.ic_album) // Ảnh mặc định
+                                )
                                 .into(holder.folderImageView);
                     } else {
                         // Nếu không có ảnh, hiển thị ảnh mặc định

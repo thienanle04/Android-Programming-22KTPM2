@@ -6,61 +6,78 @@
     android:layout_height="match_parent"
     android:padding="16dp">
 
+    <!-- LinearLayout chứa TextView và CheckBox -->
+    <LinearLayout
+        android:id="@+id/linearLayout"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginBottom="16dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
     <!-- TextView -->
     <TextView
         android:id="@+id/txtSoloMsg"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:text="Caption"
         android:textSize="18sp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        android:layout_weight="1" /> <!-- Chiếm phần còn lại của LinearLayout -->
 
-
-
-
-
+    <!-- CheckBox -->
+    <ImageView
+        android:id="@+id/imgFavourite"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:src="@drawable/ic_star_outline"
+        app:tint="?attr/colorOnBackground"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        android:focusable="true"
+        android:clickable="true" />
+</LinearLayout>
 
     <!-- Go Back Button -->
-    <Button
-        android:id="@+id/btnSoloBack"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="BACK"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@id/btnEdit"
-        app:layout_constraintStart_toStartOf="parent" />
+<Button
+    android:id="@+id/btnSoloBack"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="BACK"
+    app:layout_constraintBottom_toBottomOf="parent"
+    app:layout_constraintEnd_toStartOf="@id/btnEdit"
+    app:layout_constraintStart_toStartOf="parent" />
 
     <!-- Edit Button -->
-    <Button
-        android:id="@+id/btnEdit"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="EDIT"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@id/btnShare"
-        app:layout_constraintStart_toEndOf="@id/btnSoloBack" />
+<Button
+    android:id="@+id/btnEdit"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:text="EDIT"
+    app:layout_constraintBottom_toBottomOf="parent"
+    app:layout_constraintEnd_toStartOf="@id/btnShare"
+    app:layout_constraintStart_toEndOf="@id/btnSoloBack" />
 
     <!-- Share Button -->
-    <Button
-        android:id="@+id/btnShare"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="28dp"
-        android:text="SHARE"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+<Button
+    android:id="@+id/btnShare"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_marginEnd="28dp"
+    android:text="SHARE"
+    app:layout_constraintBottom_toBottomOf="parent"
+    app:layout_constraintEnd_toEndOf="parent" />
 
     <!-- ImageView -->
-    <ImageView
-        android:id="@+id/imgSoloPhoto"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:adjustViewBounds="true"
-        android:scaleType="fitCenter"
-        app:layout_constraintTop_toBottomOf="@id/txtSoloMsg"
-        app:layout_constraintBottom_toTopOf="@id/btnSoloBack"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHeight_max="wrap" />
+<ImageView
+    android:id="@+id/imgSoloPhoto"
+    android:layout_width="0dp"
+    android:layout_height="0dp"
+    android:adjustViewBounds="true"
+    android:scaleType="fitCenter"
+    app:layout_constraintTop_toBottomOf="@+id/linearLayout"
+    app:layout_constraintBottom_toTopOf="@id/btnSoloBack"
+    app:layout_constraintStart_toStartOf="parent"
+    app:layout_constraintEnd_toEndOf="parent"
+    app:layout_constraintHeight_max="wrap" />
 </androidx.constraintlayout.widget.ConstraintLayout>
