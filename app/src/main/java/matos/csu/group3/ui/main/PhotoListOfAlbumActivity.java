@@ -107,6 +107,7 @@ public class PhotoListOfAlbumActivity extends AppCompatActivity implements Photo
         btnAdd.setOnClickListener(v -> showPhotoSelectionDialog());
         // Ánh xạ view
         bottomNavigationView = findViewById(R.id.bottomNavigationView);
+        resetBottomNavSelection(bottomNavigationView);
         bottomNavigationView.setVisibility(View.GONE);
         bottomNavigationView.setOnItemSelectedListener(item -> {
             if (item.getItemId() == R.id.action_delete) {
@@ -137,7 +138,16 @@ public class PhotoListOfAlbumActivity extends AppCompatActivity implements Photo
             return false;
         });
     }
+    private void resetBottomNavSelection(BottomNavigationView bottomNavView) {
+        bottomNavView.getMenu().setGroupCheckable(0, true, false);
+        // Bỏ chọn tất cả item ban đầu
+        for (int i = 0; i < bottomNavView.getMenu().size(); i++) {
+            bottomNavView.getMenu().getItem(i).setChecked(false);
+        }
 
+        // Bật lại chế độ chỉ cho chọn 1 item
+        bottomNavView.getMenu().setGroupCheckable(0, true, true);
+    }
     private void loadPhotos(int albumId) {
         allPhotos = new ArrayList<>();
         photoAdapter = new PhotoSelectionAdapter(allPhotos, this, false);

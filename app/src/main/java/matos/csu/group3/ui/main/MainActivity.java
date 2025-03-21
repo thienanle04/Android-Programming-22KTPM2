@@ -120,7 +120,9 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
         setContentView(R.layout.activity_main);
         constraintLayout = findViewById(R.id.activity_main);
         bottomNavigationView = findViewById(R.id.bottomNavigationView);
+        resetBottomNavSelection(bottomNavigationView);
         bottomNavigationSelectionView = findViewById(R.id.bottomNavigationSelectionView);
+        resetBottomNavSelection(bottomNavigationSelectionView);
         photoRepository = new PhotoRepository(getApplication());
         photoViewModel = new ViewModelProvider(this).get(PhotoViewModel.class);
         albumViewModel = new ViewModelProvider(this).get(AlbumViewModel.class);
@@ -167,6 +169,16 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
         Intent intent = new Intent(this, PhotoListOfAlbumActivity.class);
         intent.putExtra("ALBUM_ID", album.getId());  // Pass the album ID
         startActivity(intent);
+    }
+    private void resetBottomNavSelection(BottomNavigationView bottomNavView) {
+        bottomNavView.getMenu().setGroupCheckable(0, true, false);
+        // Bỏ chọn tất cả item ban đầu
+        for (int i = 0; i < bottomNavView.getMenu().size(); i++) {
+            bottomNavView.getMenu().getItem(i).setChecked(false);
+        }
+
+        // Bật lại chế độ chỉ cho chọn 1 item
+        bottomNavView.getMenu().setGroupCheckable(0, true, true);
     }
 
     // Method to filter photos based on search query
