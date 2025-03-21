@@ -50,5 +50,13 @@ public interface PhotoDao {
     List<PhotoEntity> getPhotosNotInAlbum(int currentAlbumId);
     @Query("SELECT * FROM photos ORDER BY id DESC")
     List<PhotoEntity> getAllPhotosSync();
+
+    // Delete a photo by ID
+    @Query("DELETE FROM photos WHERE id = :photoId")
+    void deletePhotoById(int photoId);
+
+    // Get a photo by ID (synchronous)
+    @Query("SELECT * FROM photos WHERE id = :id")
+    PhotoEntity getPhotoByIdSync(int id);
 }
 

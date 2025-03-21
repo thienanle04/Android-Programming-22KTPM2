@@ -1,7 +1,13 @@
 package matos.csu.group3.repository;
 
 import android.app.Application;
+import android.content.ContentResolver;
+import android.content.ContentUris;
 import android.database.Cursor;
+import android.media.MediaScannerConnection;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.MediaStore;
@@ -39,6 +45,7 @@ public class PhotoRepository {
     private final MutableLiveData<List<PhotoEntity>> allPhotos;
     private final ExecutorService executor;
     private final Context context;
+    private final Handler mainHandler;
 
     public PhotoRepository(Application application) {
         AppDatabase database = AppDatabase.getInstance(application);
@@ -47,6 +54,7 @@ public class PhotoRepository {
         executor = Executors.newSingleThreadExecutor();  // Executor for background work
         context = application.getApplicationContext();
         allPhotos = new MutableLiveData<>();
+        mainHandler = new Handler(Looper.getMainLooper());
     }
 
     private void loadPhotos() {
@@ -213,5 +221,68 @@ public class PhotoRepository {
     }
     public LiveData<PhotoEntity> getPhotoById (int photoId) {
         return photoDao.getPhotoById(photoId);
+    }
+
+    public void deleteFileUsingMediaStore(Context context, String filePath) {
+        File file = new File(filePath);
+        if (!file.exists()) {
+            Log.e("PhotoRepository", "File does not exist: " + filePath);
+            return;
+        }
+
+        // Check for MANAGE_EXTERNAL_STORAGE permission (Android 11 and above)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !Environment.isExternalStorageManager()) {
+            Log.e("PhotoRepository", "MANAGE_EXTERNAL_STORAGE permission not granted");
+            return;
+        }
+
+        // Scan file into MediaStore if not indexed
+        MediaScannerConnection.scanFile(context, new String[]{filePath}, null, null);
+
+        Uri contentUri = MediaStore.Files.getContentUri("external");
+        String[] projection = {MediaStore.Files.FileColumns._ID};
+        String selection = MediaStore.MediaColumns.DATA + "=?";
+        String[] selectionArgs = new String[]{file.getAbsolutePath()};
+
+        ContentResolver contentResolver = context.getContentResolver();
+        Cursor cursor = contentResolver.query(contentUri, projection, selection, selectionArgs, null);
+
+        if (cursor != null && cursor.moveToFirst()) {
+            long id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Files.FileColumns._ID));
+            Uri fileUri = ContentUris.withAppendedId(contentUri, id);
+
+            int rowsDeleted = contentResolver.delete(fileUri, null, null);
+            if (rowsDeleted > 0) {
+                Log.d("PhotoRepository", "File deleted successfully: " + filePath);
+            } else {
+                Log.e("PhotoRepository", "Failed to delete file: " + filePath);
+            }
+            cursor.close();
+        } else {
+            Log.e("PhotoRepository", "File not found in MediaStore: " + filePath);
+        }
+
+        // Fallback to direct deletion if MediaStore fails
+        if (file.exists() && !file.delete()) {
+            Log.e("PhotoRepository", "File deletion failed using File.delete()");
+        } else {
+            Log.d("PhotoRepository", "File deleted using File.delete()");
+        }
+    }
+
+
+    // Delete a photo by ID (including the file)
+    public void deletePhotoById(int photoId) {
+        executor.execute(() -> {
+            // Get the photo entity synchronously
+            PhotoEntity photo = photoDao.getPhotoByIdSync(photoId);
+            if (photo != null) {
+                // Delete the file from storage using MediaStore
+                deleteFileUsingMediaStore(context, photo.getFilePath());
+
+                // Delete the photo from the database
+                photoDao.deletePhotoById(photoId);
+            }
+        });
     }
 }

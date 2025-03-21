@@ -29,6 +29,8 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.os.Environment;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -127,7 +129,6 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
 
         initializeViews();
         handleIntent(getIntent());
-
 
         // Check for permissions
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -284,6 +285,39 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
                     Toast.makeText(this, "Vui lòng chọn ít nhất một ảnh để chia sẻ", Toast.LENGTH_SHORT).show();
                 }
                 return true;
+            } else if (item.getItemId() == R.id.action_delete) {
+                // Handle delete action
+                List<PhotoEntity> selectedPhotos = allPhotos.stream()
+                        .filter(PhotoEntity::isSelected)
+                        .collect(Collectors.toList());
+
+                if (!selectedPhotos.isEmpty()) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !Environment.isExternalStorageManager()) {
+                        showManageStorageDialog();
+                        return true;
+                    }
+                    // Show delete confirmation dialog
+                    new AlertDialog.Builder(this)
+                            .setTitle("Xác nhận xóa")
+                            .setMessage("Bạn có chắc chắn muốn xóa các ảnh đã chọn không?")
+                            .setPositiveButton("Xóa", (dialog, which) -> {
+                                // Delete the selected photos
+                                for (PhotoEntity photo : selectedPhotos) {
+                                    photoRepository.deletePhotoById(photo.getId());
+                                }
+                                // Reset selection state
+                                selectedPhotos.forEach(photo -> photo.setSelected(false));
+                                // Update UI
+                                photoAdapter.notifyDataSetChanged();
+                                Toast.makeText(this, "Đã xóa ảnh thành công", Toast.LENGTH_SHORT).show();
+                            })
+                            .setNegativeButton("Hủy", (dialog, which) -> dialog.dismiss())
+                            .setIcon(android.R.drawable.ic_dialog_alert)
+                            .show();
+                } else {
+                    Toast.makeText(this, "Không có ảnh nào được chọn", Toast.LENGTH_SHORT).show();
+                }
+                return true;
             }
             return false;
         });
@@ -426,6 +460,21 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
                 return false;
             }
         });
+    }
+
+    private void showManageStorageDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Permission Required")
+                .setMessage("This app needs access to manage all files. Please grant permission in settings.")
+                .setPositiveButton("Allow", (dialog, which) -> {
+                    Intent intent = new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
+                    startActivity(intent);
+                })
+                .setNegativeButton("Cancel", (dialog, which) -> {
+                    Toast.makeText(this, "Permission denied. Some features may not work.", Toast.LENGTH_SHORT).show();
+                })
+                .setCancelable(false)
+                .show();
     }
 
     private void showAlbumSelectionDialog() {
