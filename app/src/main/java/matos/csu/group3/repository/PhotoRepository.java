@@ -34,14 +34,17 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import matos.csu.group3.data.local.AppDatabase;
+import matos.csu.group3.data.local.dao.AlbumDao;
 import matos.csu.group3.data.local.dao.PhotoAlbumDao;
 import matos.csu.group3.data.local.dao.PhotoDao;
+import matos.csu.group3.data.local.entity.AlbumEntity;
 import matos.csu.group3.data.local.entity.PhotoAlbum;
 import matos.csu.group3.data.local.entity.PhotoEntity;
 
 public class PhotoRepository {
     private final PhotoDao photoDao;
     private final PhotoAlbumDao photoAlbumDao;
+    private final AlbumDao albumDao;
     private final MutableLiveData<List<PhotoEntity>> allPhotos;
     private final ExecutorService executor;
     private final Context context;
@@ -50,6 +53,7 @@ public class PhotoRepository {
     public PhotoRepository(Application application) {
         AppDatabase database = AppDatabase.getInstance(application);
         photoDao = database.photoDao();
+        albumDao = database.albumDao();
         photoAlbumDao = database.photoAlbumDao();
         executor = Executors.newSingleThreadExecutor();  // Executor for background work
         context = application.getApplicationContext();
@@ -221,6 +225,79 @@ public class PhotoRepository {
     }
     public LiveData<PhotoEntity> getPhotoById (int photoId) {
         return photoDao.getPhotoById(photoId);
+    }
+    public void addPhotosToFavourite(List<PhotoEntity> selectedPhotos) {
+        executor.execute(() -> {
+            // Lấy hoặc tạo album "Favourite"
+            String favouriteAlbumName = "Favourite";
+            AlbumEntity favAlbum = albumDao.getAlbumByNameSync(favouriteAlbumName);
+            if (favAlbum == null) {
+                favAlbum = new AlbumEntity();
+                favAlbum.setName(favouriteAlbumName);
+                long favAlbumId = albumDao.insert(favAlbum);
+                Log.d("FavouriteAlbum", "Tạo album Favourite ID: " + favAlbumId);
+            }
+
+            int albumId = favAlbum.getId();
+
+            // Duyệt qua từng ảnh được chọn
+            for (PhotoEntity photo : selectedPhotos) {
+                // Đánh dấu ảnh là yêu thích
+                photo.setFavorite(true);
+
+                // Cập nhật ảnh trong cơ sở dữ liệu
+                photoDao.update(photo);
+
+                // Thêm ảnh vào album "Favourite" nếu chưa tồn tại
+                int photoId = photo.getId();
+                int count = photoAlbumDao.countPhotoInAlbum(photoId, albumId);
+                if (count == 0) {
+                    PhotoAlbum photoAlbum = new PhotoAlbum(photoId, albumId);
+                    photoAlbumDao.insert(photoAlbum);
+                    Log.d("FavouriteAlbum", "Thêm ảnh ID " + photoId + " vào album Favourite ID " + albumId);
+                }
+            }
+        });
+    }
+    public void updateFavoriteStatus(PhotoEntity photo, boolean isFavorite) {
+        executor.execute(() -> {
+            try {
+                // Cập nhật trạng thái yêu thích của ảnh trong cơ sở dữ liệu
+                photo.setFavorite(isFavorite);
+                photoDao.update(photo);
+
+                // Lấy hoặc tạo album "Favourite"
+                String favouriteAlbumName = "Favourite";
+                AlbumEntity favAlbum = albumDao.getAlbumByNameSync(favouriteAlbumName);
+
+                if (favAlbum == null) {
+                    // Nếu album "Favourite" chưa tồn tại, tạo mới
+                    favAlbum = new AlbumEntity();
+                    favAlbum.setName(favouriteAlbumName);
+                    long favAlbumId = albumDao.insert(favAlbum);
+                    Log.d("FavouriteAlbum", "Tạo album Favourite ID: " + favAlbumId);
+                }
+
+                int photoId = photo.getId();
+                int albumId = favAlbum.getId();
+
+                if (isFavorite) {
+                    // Thêm ảnh vào album "Favourite" nếu chưa tồn tại
+                    int count = photoAlbumDao.countPhotoInAlbum(photoId, albumId);
+                    if (count == 0) {
+                        PhotoAlbum photoAlbum = new PhotoAlbum(photoId, albumId);
+                        photoAlbumDao.insert(photoAlbum);
+                        Log.d("FavouriteAlbum", "Thêm ảnh ID " + photoId + " vào album Favourite ID " + albumId);
+                    }
+                } else {
+                    // Xóa ảnh khỏi album "Favourite" nếu tồn tại
+                    photoAlbumDao.deletePhotoFromAlbum(photoId, albumId);
+                    Log.d("FavouriteAlbum", "Xóa ảnh ID " + photoId + " khỏi album Favourite ID " + albumId);
+                }
+            } catch (Exception e) {
+                Log.e("FavoriteUpdateError", "Lỗi khi cập nhật trạng thái yêu thích: " + e.getMessage());
+            }
+        });
     }
 
     public void deleteFileUsingMediaStore(Context context, String filePath) {

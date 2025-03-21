@@ -127,6 +127,37 @@ public class AlbumRepository {
                 Log.d("FavouriteAlbum", "Album Favourite đã tồn tại ID: " + favAlbum.getId());
             }
 
+            // Lấy danh sách ảnh yêu thích
+            List<PhotoEntity> favouritePhotos = new ArrayList<>();
+            for (PhotoEntity photo : photos) {
+                if (photo.isFavorite()) { // Kiểm tra ảnh có phải là yêu thích không
+                    favouritePhotos.add(photo);
+                }
+            }
+
+            // Thêm ảnh yêu thích vào album "Favourite"
+            for (PhotoEntity photo : favouritePhotos) {
+                int photoId = photo.getId();
+                int albumId = favAlbum.getId();
+
+                if (photoId <= 0 || albumId <= 0) {
+                    Log.e("FavouriteAlbumError", "Photo ID hoặc Album ID không hợp lệ: Photo ID = " + photoId + ", Album ID = " + albumId);
+                    continue;
+                }
+
+                // Kiểm tra xem ảnh đã tồn tại trong album "Favourite" chưa
+                int count = photoAlbumDao.countPhotoInAlbum(photoId, albumId);
+                if (count == 0) {
+                    PhotoAlbum photoAlbum = new PhotoAlbum(photoId, albumId);
+                    try {
+                        photoAlbumDao.insert(photoAlbum);
+                        Log.d("FavouriteAlbum", "Thêm ảnh ID " + photoId + " vào album Favourite ID " + albumId);
+                    } catch (Exception e) {
+                        Log.e("FavouriteAlbumError", "Lỗi khi thêm ảnh vào album Favourite: " + e.getMessage());
+                    }
+                }
+            }
+
             // 3. Cập nhật lên LiveData
             List<AlbumEntity> albumList = albumDao.getAllAlbumsSync();
             allAlbums.postValue(albumList);
