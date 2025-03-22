@@ -24,6 +24,7 @@ import matos.csu.group3.R;
 import matos.csu.group3.data.local.entity.PhotoEntity;
 import matos.csu.group3.ui.adapter.PhotoPagerAdapter;
 import matos.csu.group3.ui.editor.CropAndRotateActivity;
+import matos.csu.group3.utils.PhotoCache;
 import matos.csu.group3.viewmodel.PhotoViewModel;
 
 public class DisplaySinglePhotoActivity extends AppCompatActivity {
@@ -55,7 +56,7 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
         Intent intent = getIntent();
         if (intent != null && intent.hasExtra("photoEntity")) {
             PhotoEntity photo = (PhotoEntity) intent.getSerializableExtra("photoEntity");
-            photos = (List<PhotoEntity>) intent.getSerializableExtra("photoList");
+            photos = PhotoCache.getInstance().getPhotoList();
             currentPosition = intent.getIntExtra("currentPosition", 0);
             if (photo != null) {
                 updateCaption(photo);

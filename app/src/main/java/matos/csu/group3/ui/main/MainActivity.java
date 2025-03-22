@@ -75,6 +75,7 @@ import matos.csu.group3.repository.PhotoRepository;
 import matos.csu.group3.ui.adapter.AlbumAdapter;
 import matos.csu.group3.ui.adapter.PhotoAdapter;
 import matos.csu.group3.ui.editor.CropAndRotateActivity;
+import matos.csu.group3.utils.PhotoCache;
 import matos.csu.group3.viewmodel.AlbumViewModel;
 import matos.csu.group3.ui.fragment.BottomExtendedMenu;
 import matos.csu.group3.viewmodel.PhotoViewModel;
@@ -272,9 +273,9 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
                 }
             }
         }
+        PhotoCache.getInstance().setPhotoList(allPhotos);
         Intent intent = new Intent(this, DisplaySinglePhotoActivity.class);
         intent.putExtra("photoEntity", photo);
-        intent.putExtra("photoList", (Serializable) allPhotos);
         intent.putExtra("currentPosition", allPhotos.indexOf(photo));
         startActivity(intent);
     }
