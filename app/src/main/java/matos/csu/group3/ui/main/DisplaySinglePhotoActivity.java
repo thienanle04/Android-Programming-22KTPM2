@@ -6,12 +6,12 @@ import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ImageButton;
-import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.viewpager2.widget.ViewPager2;
 
 import com.bumptech.glide.Glide;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
@@ -22,111 +22,118 @@ import java.util.List;
 
 import matos.csu.group3.R;
 import matos.csu.group3.data.local.entity.PhotoEntity;
+import matos.csu.group3.ui.adapter.PhotoPagerAdapter;
 import matos.csu.group3.ui.editor.CropAndRotateActivity;
 import matos.csu.group3.viewmodel.PhotoViewModel;
 
 public class DisplaySinglePhotoActivity extends AppCompatActivity {
 
-    private ImageView imgSoloPhoto;
+    private ViewPager2 viewPager;
     private TextView txtSoloMsg;
     private BottomNavigationView bottomNavigationView;
     private ImageButton btnSoloBack;
-    Menu menu;
-    MenuItem favouriteItem;
     private PhotoViewModel photoViewModel;
-    private PhotoEntity photo;
+    private PhotoPagerAdapter photoPagerAdapter;
+    private List<PhotoEntity> photos = new ArrayList<>();
+    private int currentPosition;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_display_single_photo);
+
         photoViewModel = new ViewModelProvider(this).get(PhotoViewModel.class);
+
         // Ánh xạ các view
-        imgSoloPhoto = findViewById(R.id.imgSoloPhoto);
+        viewPager = findViewById(R.id.viewPager);
         txtSoloMsg = findViewById(R.id.txtSoloMsg);
         btnSoloBack = findViewById(R.id.btnSoloBack);
         bottomNavigationView = findViewById(R.id.bottomNavigationSinglePhotoView);
         resetBottomNavSelection(bottomNavigationView);
 
-        Menu menu = bottomNavigationView.getMenu();
-        MenuItem favouriteItem = menu.findItem(R.id.action_favorite);
         // Lấy dữ liệu từ Intent
         Intent intent = getIntent();
         if (intent != null && intent.hasExtra("photoEntity")) {
-            photo = (PhotoEntity) intent.getSerializableExtra("photoEntity");
-
-            // Cập nhật giao diện với dữ liệu ảnh
+            PhotoEntity photo = (PhotoEntity) intent.getSerializableExtra("photoEntity");
+            photos = (List<PhotoEntity>) intent.getSerializableExtra("photoList");
+            currentPosition = intent.getIntExtra("currentPosition", 0);
             if (photo != null) {
-                txtSoloMsg.setText(photo.getDateTaken());
-                Glide.with(this)
-                        .load(new File(photo.getFilePath()))
-                        .into(imgSoloPhoto);
-                if (photo.isFavorite()) {
-                    favouriteItem.setIcon(R.drawable.ic_favorite_selected); // Icon khi được yêu thích
-                } else {
-                    favouriteItem.setIcon(R.drawable.ic_favorite); // Icon mặc định
-                }
+                updateCaption(photo);
             }
         }
-        bottomNavigationView.setOnItemSelectedListener(item -> {
-            if (item.getItemId() == R.id.action_share) {
-                if (photo != null) {
-                    // Create a list with the single photo
-                    List<PhotoEntity> photos = new ArrayList<>();
-                    photos.add(photo);
 
-                    // Call the sharePhotosViaMessenger method
-                    PhotoListOfAlbumActivity.sharePhotosViaPackage(DisplaySinglePhotoActivity.this, photos);
+        // Khởi tạo Adapter
+        photoPagerAdapter = new PhotoPagerAdapter(photos);
+        viewPager.setAdapter(photoPagerAdapter);
+
+        viewPager.setCurrentItem(currentPosition, false);
+
+        // Lắng nghe sự kiện khi người dùng vuốt qua ảnh khác
+        viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
+            @Override
+            public void onPageSelected(int position) {
+                super.onPageSelected(position);
+                currentPosition = position;
+                updateCaption(photos.get(position));
+            }
+        });
+
+        // Xử lý sự kiện BottomNavigationView
+        bottomNavigationView.setOnItemSelectedListener(item -> {
+            PhotoEntity currentPhoto = photos.get(currentPosition);
+            if (item.getItemId() == R.id.action_share) {
+                if (currentPhoto != null) {
+                    List<PhotoEntity> photosToShare = new ArrayList<>();
+                    photosToShare.add(currentPhoto);
+                    PhotoListOfAlbumActivity.sharePhotosViaPackage(DisplaySinglePhotoActivity.this, photosToShare);
                 } else {
                     Toast.makeText(this, "Không có ảnh để chia sẻ", Toast.LENGTH_SHORT).show();
                 }
                 return true;
             } else if (item.getItemId() == R.id.action_edit) {
-                if (photo != null) {
+                if (currentPhoto != null) {
                     Intent cropIntent = new Intent(DisplaySinglePhotoActivity.this, CropAndRotateActivity.class);
-                    cropIntent.setData(Uri.fromFile(new File(photo.getFilePath())));
-                    cropIntent.putExtra("photoEntity", photo);
+                    cropIntent.setData(Uri.fromFile(new File(currentPhoto.getFilePath())));
+                    cropIntent.putExtra("photoEntity", currentPhoto);
                     startActivity(cropIntent);
-                    if(photo.isFavorite()){
-                        favouriteItem.setIcon(R.drawable.ic_favorite_selected); // Icon khi được yêu thích
-                    } else {
-                        favouriteItem.setIcon(R.drawable.ic_favorite); // Icon mặc định
-                    }
                 }
                 return true;
             } else if (item.getItemId() == R.id.action_favorite) {
-                if (photo != null) {
-                    boolean isFavorite = !photo.isFavorite();
-                    photo.setFavorite(isFavorite);
-
-                    if (isFavorite) {
-                        favouriteItem.setIcon(R.drawable.ic_favorite_selected); // Icon khi được yêu thích
-                    } else {
-                        favouriteItem.setIcon(R.drawable.ic_favorite); // Icon mặc định
-                    }
-
-                    photoViewModel.updateFavoriteStatus(photo, isFavorite);
+                if (currentPhoto != null) {
+                    boolean isFavorite = !currentPhoto.isFavorite();
+                    currentPhoto.setFavorite(isFavorite);
+                    photoViewModel.updateFavoriteStatus(currentPhoto, isFavorite);
+                    updateFavoriteIcon(item, isFavorite);
                 }
                 return true;
             } else if (item.getItemId() == R.id.action_delete) {
-
+                // Xử lý xóa ảnh
                 return true;
             }
-
             return false;
         });
 
         // Nút quay lại
         btnSoloBack.setOnClickListener(v -> finish());
     }
+
+    private void updateCaption(PhotoEntity photo) {
+        txtSoloMsg.setText(photo.getDateTaken());
+    }
+
+    private void updateFavoriteIcon(MenuItem item, boolean isFavorite) {
+        if (isFavorite) {
+            item.setIcon(R.drawable.ic_favorite_selected);
+        } else {
+            item.setIcon(R.drawable.ic_favorite);
+        }
+    }
+
     private void resetBottomNavSelection(BottomNavigationView bottomNavView) {
         bottomNavView.getMenu().setGroupCheckable(0, true, false);
-        // Bỏ chọn tất cả item ban đầu
         for (int i = 0; i < bottomNavView.getMenu().size(); i++) {
             bottomNavView.getMenu().getItem(i).setChecked(false);
         }
-
-        // Bật lại chế độ chỉ cho chọn 1 item
         bottomNavView.getMenu().setGroupCheckable(0, true, true);
     }
 }
