@@ -11,8 +11,13 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
+import com.google.android.flexbox.FlexDirection;
+import com.google.android.flexbox.FlexWrap;
+import com.google.android.flexbox.FlexboxLayoutManager;
+import com.google.android.flexbox.JustifyContent;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -23,14 +28,17 @@ import matos.csu.group3.data.local.AppDatabase;
 import matos.csu.group3.data.local.dao.PhotoDao;
 import matos.csu.group3.data.local.entity.Hashtags;
 import matos.csu.group3.data.local.entity.PhotoEntity;
+import matos.csu.group3.ui.adapter.HashtagAdapter;
 import matos.csu.group3.ui.editor.CropAndRotateActivity;
 
-public class DisplaySinglePhotoActivity extends AppCompatActivity {
+public class DisplaySinglePhotoActivity extends AppCompatActivity implements HashtagAdapter.OnHashtagRemoveListener {
 
     private ImageView imgSoloPhoto;
     private TextView txtSoloMsg;
     private Button btnSoloBack, btnEdit, btnShare, btnAddHashtag;
-    private EditText editTextHashtag;
+    private RecyclerView recyclerViewHashtags;
+    private HashtagAdapter hashtagAdapter;
+
     private PhotoEntity photo;
     private PhotoDao photoDao;
 
@@ -46,6 +54,14 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
         btnEdit = findViewById(R.id.btnEdit);
         btnShare = findViewById(R.id.btnShare);
         btnAddHashtag = findViewById(R.id.btnAddHashtag);
+        recyclerViewHashtags = findViewById(R.id.recyclerViewHashtags);
+
+        // Setup RecyclerView và FlexboxLayoutManager
+        FlexboxLayoutManager layoutManager = new FlexboxLayoutManager(this);
+        layoutManager.setFlexDirection(FlexDirection.ROW);
+        layoutManager.setFlexWrap(FlexWrap.WRAP);
+        layoutManager.setJustifyContent(JustifyContent.FLEX_START);
+        recyclerViewHashtags.setLayoutManager(layoutManager);
 
         AppDatabase db = AppDatabase.getInstance(this);
         photoDao = db.photoDao();
@@ -88,9 +104,16 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
                     if (photo.getHashtags() == null) {
                         photo.setHashtags(new Hashtags(new ArrayList<>()));
                     }
-                    photo.getHashtags().getHashtags().add(hashtag);
+
+                    List<String> currentHashtags = photo.getHashtags().getHashtags();
+                    if (!(currentHashtags instanceof ArrayList)) {
+                        currentHashtags = new ArrayList<>(currentHashtags);
+                        photo.getHashtags().setHashtags(currentHashtags);
+                    }
+
+                    currentHashtags.add(hashtag);
                     updatePhotoEntity(photo);
-                    updateUI(); // Clear the input
+                    updateHashtagsDisplay();
                     Toast.makeText(this, "Hashtag added", Toast.LENGTH_SHORT).show();
                 } else {
                     Toast.makeText(this, "Please enter a hashtag", Toast.LENGTH_SHORT).show();
@@ -98,7 +121,7 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
             });
             builder.setNegativeButton("CANCEL", (dialog, which) -> dialog.cancel());
 
-            builder.show(); // Show the dialog
+            builder.show();
         });
 
         // Nút chia sẻ ảnh
@@ -116,22 +139,48 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
         });
     }
 
-    void updateUI() {
+    private void updateUI() {
         txtSoloMsg.setText(photo.getDateTaken());
         Glide.with(this)
                 .load(new File(photo.getFilePath()))
                 .into(imgSoloPhoto);
 
-        if (photo.getHashtags() != null) {
-            StringBuilder hashtags = new StringBuilder();
-            for (String hashtag : photo.getHashtags().getHashtags()) {
-                hashtags.append(hashtag).append(" ");
-            }
-            txtSoloMsg.append("\nHashtags: " + hashtags.toString().trim());
+        updateHashtagsDisplay();
+    }
+
+    private void updateHashtagsDisplay() {
+        List<String> hashtags;
+        if (photo.getHashtags() != null && photo.getHashtags().getHashtags() != null) {
+            hashtags = new ArrayList<>(photo.getHashtags().getHashtags());
+        } else {
+            // Initialize with empty list if no hashtags
+            hashtags = new ArrayList<>();
+        }
+
+        if (hashtagAdapter == null) {
+            hashtagAdapter = new HashtagAdapter(hashtags, this);
+            recyclerViewHashtags.setAdapter(hashtagAdapter);
+        } else {
+            hashtagAdapter.updateHashtags(hashtags);
         }
     }
 
-    void updatePhotoEntity(PhotoEntity photo) {
+    private void updatePhotoEntity(PhotoEntity photo) {
         new Thread(() -> photoDao.update(photo)).start();
+    }
+
+    @Override
+    public void onHashtagRemoved(int position) {
+        if (photo.getHashtags() != null && photo.getHashtags().getHashtags() != null) {
+            List<String> currentHashtags = new ArrayList<>(photo.getHashtags().getHashtags());
+            if (position >= 0 && position < currentHashtags.size()) {
+                currentHashtags.remove(position);
+
+                photo.getHashtags().setHashtags(currentHashtags);
+                updatePhotoEntity(photo);
+                updateHashtagsDisplay();
+                Toast.makeText(this, "Hashtag removed", Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 }
