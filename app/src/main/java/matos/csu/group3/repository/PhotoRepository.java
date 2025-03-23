@@ -32,6 +32,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 import matos.csu.group3.data.local.AppDatabase;
 import matos.csu.group3.data.local.dao.AlbumDao;
@@ -164,7 +165,7 @@ public class PhotoRepository {
     }
 
     public LiveData<List<PhotoEntity>> getAllPhotos() {
-        return photoDao.getAllPhotos();
+        return photoDao.getAllNonDeletedPhotosSync();
     }
     public void addPhotosToAlbum(int albumId, List<PhotoEntity> photos) {
         executor.execute(() -> {
@@ -359,6 +360,46 @@ public class PhotoRepository {
 
                 // Delete the photo from the database
                 photoDao.deletePhotoById(photoId);
+            }
+        });
+    }
+
+
+    public void movePhotosToTrash(List<PhotoEntity> photos) {
+        executor.execute(() -> {
+            try {
+                for (PhotoEntity photo : photos) {
+                    // Cập nhật trạng thái yêu thích của ảnh trong cơ sở dữ liệu
+                    photo.setDeleted(true);
+                    photoDao.update(photo);
+                    Log.d("IsDeleted: ", "PhotoId: " + photo.getId() + " State: " + photo.isDeleted());
+                    Log.d("AlbumId: ", "PhotoId: " + photo.getId() + " State: " + photo.isDeleted());
+
+                    // Lấy hoặc tạo album "Favourite"
+                    String trashAlbumName = "Trash";
+                    AlbumEntity trashAlbum = albumDao.getAlbumByNameSync(trashAlbumName);
+
+                    if (trashAlbum == null) {
+                        // Nếu album "Trash" chưa tồn tại, tạo mới
+                        trashAlbum = new AlbumEntity();
+                        trashAlbum.setName(trashAlbumName);
+                        long trashAlbumId = albumDao.insert(trashAlbum);
+                        Log.d("TrashAlbum", "Tạo album Trash ID: " + trashAlbumId);
+                    }
+
+                    int photoId = photo.getId();
+                    int albumId = trashAlbum.getId();
+
+                    // Thêm ảnh vào album "Trash" nếu chưa tồn tại
+                    int count = photoAlbumDao.countPhotoInAlbum(photoId, albumId);
+                    if (count == 0) {
+                        PhotoAlbum photoAlbum = new PhotoAlbum(photoId, albumId);
+                        photoAlbumDao.insert(photoAlbum);
+                        Log.d("TrashAlbum", "Thêm ảnh ID " + photoId + " vào album Trash ID " + albumId);
+                    }
+                }
+            } catch (Exception e) {
+                Log.e("TrashUpdateError", "Lỗi khi cập nhật trạng thái xoa: " + e.getMessage());
             }
         });
     }

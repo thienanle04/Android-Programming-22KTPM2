@@ -50,7 +50,8 @@ public interface PhotoDao {
     List<PhotoEntity> getPhotosNotInAlbum(int currentAlbumId);
     @Query("SELECT * FROM photos ORDER BY id DESC")
     List<PhotoEntity> getAllPhotosSync();
-
+    @Query("SELECT * FROM photos WHERE isDeleted != TRUE ORDER BY id DESC")
+    LiveData<List<PhotoEntity>> getAllNonDeletedPhotosSync();
     // Delete a photo by ID
     @Query("DELETE FROM photos WHERE id = :photoId")
     void deletePhotoById(int photoId);

@@ -28,8 +28,13 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.work.Data;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkManager;
 
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -60,6 +65,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import java.util.Date;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import matos.csu.group3.R;
@@ -69,6 +75,7 @@ import matos.csu.group3.data.local.entity.ListItem;
 import matos.csu.group3.data.local.entity.PhotoAlbum;
 import matos.csu.group3.data.local.entity.PhotoEntity;
 import matos.csu.group3.data.local.entity.PhotoItem;
+import matos.csu.group3.notification.DeletePhotosWorker;
 import matos.csu.group3.repository.PhotoRepository;
 import matos.csu.group3.ui.adapter.AlbumAdapter;
 import matos.csu.group3.ui.adapter.PhotoAdapter;
@@ -322,20 +329,26 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
                         showManageStorageDialog();
                         return true;
                     }
+
                     // Show delete confirmation dialog
                     new AlertDialog.Builder(this)
                             .setTitle("Xác nhận xóa")
                             .setMessage("Bạn có chắc chắn muốn xóa các ảnh đã chọn không?")
                             .setPositiveButton("Xóa", (dialog, which) -> {
-                                // Delete the selected photos
-                                for (PhotoEntity photo : selectedPhotos) {
-                                    photoRepository.deletePhotoById(photo.getId());
-                                }
+                                // Move the selected photos to the Trash album
+                                photoRepository.movePhotosToTrash(selectedPhotos);
+                                //Delete photo after a schedule times
+                                schedulePermanentDeletion(selectedPhotos);
+
+
                                 // Reset selection state
                                 selectedPhotos.forEach(photo -> photo.setSelected(false));
+
                                 // Update UI
                                 photoAdapter.notifyDataSetChanged();
-                                Toast.makeText(this, "Đã xóa ảnh thành công", Toast.LENGTH_SHORT).show();
+
+                                // Show a success message
+                                Toast.makeText(this, "Đã chuyển ảnh vào thùng rác", Toast.LENGTH_SHORT).show();
                             })
                             .setNegativeButton("Hủy", (dialog, which) -> dialog.dismiss())
                             .setIcon(android.R.drawable.ic_dialog_alert)
@@ -488,19 +501,45 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
         });
     }
 
+    //Handle delete function
+    //Permission required message
     private void showManageStorageDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setTitle("Permission Required")
-                .setMessage("This app needs access to manage all files. Please grant permission in settings.")
-                .setPositiveButton("Allow", (dialog, which) -> {
+        builder.setTitle("Cần cấp quyền truy cập ")
+                .setMessage("Ứng dụng cần được cấp quyền truy cập quản lí tất cả các file, vui lòng cấp quyền truy cập trong settings.")
+                .setPositiveButton("Đồng ý", (dialog, which) -> {
                     Intent intent = new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
                     startActivity(intent);
                 })
-                .setNegativeButton("Cancel", (dialog, which) -> {
-                    Toast.makeText(this, "Permission denied. Some features may not work.", Toast.LENGTH_SHORT).show();
+                .setNegativeButton("Hủy", (dialog, which) -> {
+                    Toast.makeText(this, "Không được cấp quyền truy cập, một vài tính năng có thể không hoạt động.", Toast.LENGTH_SHORT).show();
                 })
                 .setCancelable(false)
                 .show();
+    }
+    //Set time for delete photos (after ... )
+    private void schedulePermanentDeletion(List<PhotoEntity> photos) {
+        // Extract photo IDs
+        int[] photoIds = new int[photos.size()];
+        for (int i = 0; i < photos.size(); i++) {
+            photoIds[i] = photos.get(i).getId();
+        }
+
+        // Create input data
+        Data inputData = new Data.Builder()
+                .putIntArray("photo_ids", photoIds)
+                .build();
+
+        // Create a WorkRequest
+        OneTimeWorkRequest deleteWorkRequest = new OneTimeWorkRequest.Builder(DeletePhotosWorker.class)
+                .setInputData(inputData)
+                .setInitialDelay(10, TimeUnit.MINUTES) // Delay for 10 minutes
+                .build();
+
+        // Enqueue the work
+        WorkManager.getInstance(this).enqueue(deleteWorkRequest);
+
+        Log.d("TrashAlbum", "Scheduled permanent deletion of photos in trash");
     }
 
     private void showAlbumSelectionDialog() {

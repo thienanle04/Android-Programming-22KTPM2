@@ -24,6 +24,7 @@ public class PhotoEntity implements Serializable{
     private String googleDriveId;     // Google Drive ID (optional, for syncing with Google Drive)
     private boolean isUploaded;       // Whether the photo is uploaded to Google Drive
     private boolean isSynced;         // Whether the photo is fully synced
+    private boolean isDeleted;        // Flag to mark the photo as deleted
 
     private boolean selected;
     // Getters and Setters
@@ -143,6 +144,15 @@ public class PhotoEntity implements Serializable{
 
     public void setSynced(boolean synced) {
         isSynced = synced;
+    }
+
+    // Getter and Setter for isFavorite
+    public boolean isDeleted() {
+        return isDeleted;
+    }
+
+    public void setDeleted(boolean deleted) {
+        isDeleted = deleted;
     }
 
     @Override

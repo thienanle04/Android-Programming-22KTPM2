@@ -89,4 +89,5 @@ dependencies {
     implementation(libs.preference.ktx)
     implementation(libs.appauth.v0111)
     implementation(libs.lifecycle.livedata.ktx)
+    implementation(libs.work.runtime.ktx)
 }
