@@ -107,6 +107,7 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
     private TextView tvSelectedCount;
     private ImageButton btnSelectAll;
     private ConstraintLayout constraintLayout;
+    private static final int REQUEST_CODE_DISPLAY_PHOTO = 1001; // Unique request code
 
 
     // Register the permission request launcher
@@ -268,23 +269,28 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
     }
 
     private void showBigScreen(PhotoEntity photo) {
+        // Sort photos by date (newest first)
         for (int i = 0; i < allPhotos.size() - 1; i++) {
             for (int j = i + 1; j < allPhotos.size(); j++) {
                 PhotoEntity photo1 = allPhotos.get(i);
                 PhotoEntity photo2 = allPhotos.get(j);
 
-                // So sánh năm, tháng, ngày
+                // Compare dates
                 if (isNewer(photo2.getDateTaken(), photo1.getDateTaken())) {
-                    // Hoán đổi vị trí nếu photo2 mới hơn photo1
+                    // Swap positions if photo2 is newer than photo1
                     Collections.swap(allPhotos, i, j);
                 }
             }
         }
+
+        // Cache the photo list
         PhotoCache.getInstance().setPhotoList(allPhotos);
+
+        // Start DisplaySinglePhotoActivity for result
         Intent intent = new Intent(this, DisplaySinglePhotoActivity.class);
         intent.putExtra("photoEntity", photo);
         intent.putExtra("currentPosition", allPhotos.indexOf(photo));
-        startActivity(intent);
+        startActivityForResult(intent, REQUEST_CODE_DISPLAY_PHOTO);
     }
     private boolean isNewer(String date1, String date2) {
         // Tách ngày, tháng, năm từ date1
@@ -389,7 +395,7 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
                                 // Move the selected photos to the Trash album
                                 photoRepository.movePhotosToTrash(selectedPhotos);
                                 //Delete photo after a schedule times
-                                schedulePermanentDeletion(selectedPhotos);
+                                photoRepository.schedulePermanentDeletion(selectedPhotos, this);
 
 
                                 // Reset selection state
@@ -568,31 +574,6 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
                 .setCancelable(false)
                 .show();
     }
-    //Set time for delete photos (after ... )
-    private void schedulePermanentDeletion(List<PhotoEntity> photos) {
-        // Extract photo IDs
-        int[] photoIds = new int[photos.size()];
-        for (int i = 0; i < photos.size(); i++) {
-            photoIds[i] = photos.get(i).getId();
-        }
-
-        // Create input data
-        Data inputData = new Data.Builder()
-                .putIntArray("photo_ids", photoIds)
-                .build();
-
-        // Create a WorkRequest
-        OneTimeWorkRequest deleteWorkRequest = new OneTimeWorkRequest.Builder(DeletePhotosWorker.class)
-                .setInputData(inputData)
-                .setInitialDelay(10, TimeUnit.MINUTES) // Delay for 10 minutes
-                .build();
-
-        // Enqueue the work
-        WorkManager.getInstance(this).enqueue(deleteWorkRequest);
-
-        Log.d("TrashAlbum", "Scheduled permanent deletion of photos in trash");
-    }
-
     private void showAlbumSelectionDialog() {
         // Tạo dialog
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -792,6 +773,7 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
 
         if (resultCode == RESULT_OK) {
             if (requestCode == UCrop.REQUEST_CROP) {
+                // Handle photo editing result
                 if (data != null && data.hasExtra("photoEntity")) {
                     PhotoEntity updatedPhoto = (PhotoEntity) data.getSerializableExtra("photoEntity");
 
@@ -807,6 +789,16 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
                                 new String[]{"image/jpeg"},
                                 (path, uri) -> Log.d("MainActivity", "Rescanned edited file: " + path)
                         );
+                    }
+                }
+            } else if (requestCode == REQUEST_CODE_DISPLAY_PHOTO) {
+                // Handle photo deletion result
+                if (data != null && data.hasExtra("deletedPhotoId")) {
+                    int deletedPhotoId = data.getIntExtra("deletedPhotoId", -1);
+                    if (deletedPhotoId != -1) {
+                        // Remove the deleted photo from the list and update the UI
+                        allPhotos.removeIf(photo -> photo.getId() == deletedPhotoId);
+                        photoAdapter.notifyDataSetChanged();
                     }
                 }
             }

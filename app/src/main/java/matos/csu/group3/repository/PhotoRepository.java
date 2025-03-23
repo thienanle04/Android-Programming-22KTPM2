@@ -1,8 +1,10 @@
 package matos.csu.group3.repository;
 
+import android.app.AlertDialog;
 import android.app.Application;
 import android.content.ContentResolver;
 import android.content.ContentUris;
+import android.content.Intent;
 import android.database.Cursor;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
@@ -12,12 +14,16 @@ import android.os.Handler;
 import android.os.Looper;
 import android.provider.MediaStore;
 import android.content.Context;
+import android.provider.Settings;
 import android.util.Log;
 import android.widget.Toast;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.Transformations;
+import androidx.work.Data;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkManager;
 
 import java.io.File;
 import java.text.ParseException;
@@ -32,6 +38,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import matos.csu.group3.data.local.AppDatabase;
@@ -41,6 +48,7 @@ import matos.csu.group3.data.local.dao.PhotoDao;
 import matos.csu.group3.data.local.entity.AlbumEntity;
 import matos.csu.group3.data.local.entity.PhotoAlbum;
 import matos.csu.group3.data.local.entity.PhotoEntity;
+import matos.csu.group3.notification.DeletePhotosWorker;
 
 public class PhotoRepository {
     private final PhotoDao photoDao;
@@ -402,5 +410,23 @@ public class PhotoRepository {
                 Log.e("TrashUpdateError", "Lỗi khi cập nhật trạng thái xoa: " + e.getMessage());
             }
         });
+    }
+
+    public void schedulePermanentDeletion(List<PhotoEntity> photos, Context context) {
+        int[] photoIds = new int[photos.size()];
+        for (int i = 0; i < photos.size(); i++) {
+            photoIds[i] = photos.get(i).getId();
+        }
+
+        Data inputData = new Data.Builder()
+                .putIntArray("photo_ids", photoIds)
+                .build();
+
+        OneTimeWorkRequest deleteWorkRequest = new OneTimeWorkRequest.Builder(DeletePhotosWorker.class)
+                .setInputData(inputData)
+                .setInitialDelay(3, TimeUnit.MINUTES)
+                .build();
+
+        WorkManager.getInstance(context).enqueue(deleteWorkRequest);
     }
 }
