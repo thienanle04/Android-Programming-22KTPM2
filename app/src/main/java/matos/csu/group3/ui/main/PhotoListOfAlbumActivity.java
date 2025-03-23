@@ -43,6 +43,7 @@ import matos.csu.group3.repository.AlbumRepository;
 import matos.csu.group3.repository.PhotoRepository;
 import matos.csu.group3.ui.adapter.AlbumAdapter;
 import matos.csu.group3.ui.adapter.PhotoSelectionAdapter;
+import matos.csu.group3.utils.PhotoCache;
 import matos.csu.group3.viewmodel.AlbumViewModel;
 
 public class PhotoListOfAlbumActivity extends AppCompatActivity implements PhotoSelectionAdapter.OnPhotoSelectedListener, PhotoSelectionAdapter.OnPhotoClickListener {
@@ -387,9 +388,9 @@ public class PhotoListOfAlbumActivity extends AppCompatActivity implements Photo
                 }
             }
         }
+        PhotoCache.getInstance().setPhotoList(allPhotos);
         Intent intent = new Intent(this, DisplaySinglePhotoActivity.class);
         intent.putExtra("photoEntity", photo);
-        intent.putExtra("photoList", (Serializable) allPhotos);
         intent.putExtra("currentPosition", allPhotos.indexOf(photo));
         startActivity(intent);
     }
