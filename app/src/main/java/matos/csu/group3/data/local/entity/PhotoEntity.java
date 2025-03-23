@@ -3,6 +3,7 @@ package matos.csu.group3.data.local.entity;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 import java.io.Serializable;
+import java.util.List;
 import java.util.Objects;
 
 @Entity(tableName = "photos")
@@ -22,6 +23,7 @@ public class PhotoEntity implements Serializable{
     private String fileFormat;        // File format (e.g., "jpg", "png")
     private String description;       // Description of the photo (optional)
     private String googleDriveId;     // Google Drive ID (optional, for syncing with Google Drive)
+    private Hashtags hashtags;
     private boolean isUploaded;       // Whether the photo is uploaded to Google Drive
     private boolean isSynced;         // Whether the photo is fully synced
 
@@ -72,6 +74,10 @@ public class PhotoEntity implements Serializable{
     public void setLocation(String location) {
         this.location = location;
     }
+
+    public Hashtags getHashtags() { return hashtags; }
+
+    public void setHashtags(Hashtags hashtags) { this.hashtags = hashtags; }
 
     // Getter and Setter for albumId
     public int getAlbumId() {

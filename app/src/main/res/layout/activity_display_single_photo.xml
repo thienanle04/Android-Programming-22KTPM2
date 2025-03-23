@@ -17,10 +17,6 @@
         app:layout_constraintStart_toStartOf="parent" />
 
 
-
-
-
-
     <!-- Go Back Button -->
     <Button
         android:id="@+id/btnSoloBack"
@@ -38,8 +34,18 @@
         android:layout_height="wrap_content"
         android:text="EDIT"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@id/btnShare"
+        app:layout_constraintEnd_toStartOf="@id/btnAddHashtag"
         app:layout_constraintStart_toEndOf="@id/btnSoloBack" />
+
+    <!-- Add Hashtag Button -->
+    <Button
+        android:id="@+id/btnAddHashtag"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="ADD"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@id/btnShare"
+        app:layout_constraintStart_toEndOf="@id/btnEdit" />
 
     <!-- Share Button -->
     <Button
@@ -63,4 +69,5 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHeight_max="wrap" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>
