@@ -6,6 +6,7 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.lifecycle.ViewModelProvider;
@@ -114,7 +115,18 @@ public class SearchActivity extends AppCompatActivity {
 
         List<PhotoEntity> filteredPhotos = new ArrayList<>();
         for (PhotoEntity photo : photoList) {
-            if (photo.getName().toLowerCase().contains(query.toLowerCase())) {
+            boolean nameMatch = photo.getName() != null && photo.getName().toLowerCase().contains(query.toLowerCase());
+            boolean hashtagMatch = false;
+            if (photo.getHashtags() != null && photo.getHashtags().getHashtags() != null) {
+                for (String hashtag : photo.getHashtags().getHashtags()) {
+                    if (hashtag.toLowerCase().contains(query.toLowerCase())) {
+                        hashtagMatch = true;
+                        break;
+                    }
+                }
+            }
+
+            if (nameMatch || hashtagMatch) {
                 filteredPhotos.add(photo);
             }
         }
@@ -122,6 +134,10 @@ public class SearchActivity extends AppCompatActivity {
         Map<String, List<PhotoEntity>> photosByDate = groupPhotosByDate(filteredPhotos);
         List<ListItem> groupedList = convertToGroupedList(photosByDate);
         photoAdapter.updateData(groupedList);
+
+        if (filteredPhotos.isEmpty()) {
+            Toast.makeText(this, "No photos found matching your search", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private Map<String, List<PhotoEntity>> groupPhotosByDate(List<PhotoEntity> photos) {
