@@ -55,7 +55,7 @@
                     android:host="oauth2redirect" />
             </intent-filter>
         </activity>
-
+        <activity android:name=".ui.main.SearchActivity"/>
         <activity android:name=".ui.main.DisplaySinglePhotoActivity" />
         <activity
             android:name="com.yalantis.ucrop.UCropActivity"
