@@ -16,6 +16,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.viewpager2.widget.ViewPager2;
 
@@ -41,13 +42,16 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
 
     private ViewPager2 viewPager;
     private TextView txtSoloMsg;
+    private Menu menu;
+    private MenuItem favouriteItem;
     private BottomNavigationView bottomNavigationView;
     private ImageButton btnSoloBack;
     private PhotoViewModel photoViewModel;
     private PhotoPagerAdapter photoPagerAdapter;
-    private List<PhotoEntity> photos = new ArrayList<>();
+    private List<Integer> photoIds;
     private int currentPosition;
     private PhotoRepository photoRepository;
+    private PhotoEntity currentPhoto;
     private AlbumRepository albumRepository;
 
     @Override
@@ -64,25 +68,24 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
         bottomNavigationView = findViewById(R.id.bottomNavigationSinglePhotoView);
 
         photoRepository = new PhotoRepository(getApplication());
+
+        menu = bottomNavigationView.getMenu();
+        favouriteItem = menu.findItem(R.id.action_favorite);
         albumRepository = new AlbumRepository(getApplication());
 
         // Lấy dữ liệu từ Intent
         Intent intent = getIntent();
         boolean isTrashAlbum = false;
-        if (intent != null && intent.hasExtra("photoEntity")) {
-            PhotoEntity photo = (PhotoEntity) intent.getSerializableExtra("photoEntity");
-            photos = PhotoCache.getInstance().getPhotoList();
+        if (intent != null) {
+            photoIds = PhotoCache.getInstance().getPhotoListIds();
             currentPosition = intent.getIntExtra("currentPosition", 0);
             isTrashAlbum = intent.getBooleanExtra("isTrashAlbum", false);
-            if (photo != null) {
-                updateCaption(photo);
-            }
+            loadCurrentPhoto();
+
         }
 
-        // Khởi tạo Adapter
-        photoPagerAdapter = new PhotoPagerAdapter(photos);
+        photoPagerAdapter = new PhotoPagerAdapter(photoIds, photoViewModel, this);
         viewPager.setAdapter(photoPagerAdapter);
-
         viewPager.setCurrentItem(currentPosition, false);
 
         // Lắng nghe sự kiện khi người dùng vuốt qua ảnh khác
@@ -91,7 +94,7 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
             public void onPageSelected(int position) {
                 super.onPageSelected(position);
                 currentPosition = position;
-                updateCaption(photos.get(position));
+                loadCurrentPhoto();
             }
         });
 
@@ -101,6 +104,28 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
 
         // Nút quay lại
         btnSoloBack.setOnClickListener(v -> finish());
+    }
+    private void loadCurrentPhoto() {
+        if (isInvalidPosition()) return;
+
+        photoViewModel.getPhotoById(photoIds.get(currentPosition)).observe(this, new Observer<PhotoEntity>() {
+            @Override
+            public void onChanged(PhotoEntity photo) {
+                currentPhoto = photo;
+                if (photo != null) {
+                    updateCaption(photo);
+                    if (photo.isFavorite()) {
+                        favouriteItem.setIcon(R.drawable.ic_favorite_selected); // Icon khi được yêu thích
+                    } else {
+                        favouriteItem.setIcon(R.drawable.ic_favorite); // Icon mặc định
+                    }
+                }
+            }
+        });
+    }
+
+    private boolean isInvalidPosition() {
+        return photoIds == null || photoIds.isEmpty() || currentPosition < 0 || currentPosition >= photoIds.size();
     }
 
     private void updateCaption(PhotoEntity photo) {
@@ -131,13 +156,13 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
         setResult(RESULT_OK, resultIntent);
 
         // Update UI
-        photos.remove(photo);
+        photoIds.remove(photo.getId());
         photoPagerAdapter.notifyDataSetChanged();
 
         Toast.makeText(this, "Đã chuyển ảnh vào thùng rác", Toast.LENGTH_SHORT).show();
 
         // Close the activity if no photos are left
-        if (photos.isEmpty()) {
+        if (photoIds.isEmpty()) {
             Log.d("DisplaySinglePhoto", "No photos left, finishing activity");
             finish();
         }
@@ -191,7 +216,6 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
 
         // Set up the item selected listener
         bottomNavigationView.setOnItemSelectedListener(item -> {
-            PhotoEntity currentPhoto = photos.get(currentPosition);
             if (item.getItemId() == R.id.action_share) {
                 if (currentPhoto != null) {
                     List<PhotoEntity> photosToShare = new ArrayList<>();
@@ -276,10 +300,9 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
                                         Toast.makeText(this, "Đã khôi phục ảnh", Toast.LENGTH_SHORT).show();
 
                                         // Update UI
-                                        photos.remove(photo);
                                         photoPagerAdapter.notifyDataSetChanged();
 
-                                        if (photos.isEmpty()) {
+                                        if (photoIds.isEmpty()) {
                                             finish();
                                         }
                                     });
@@ -300,10 +323,9 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
                     Toast.makeText(this, "Đã xóa ảnh vĩnh viễn", Toast.LENGTH_SHORT).show();
 
                     // Update UI
-                    photos.remove(photo);
                     photoPagerAdapter.notifyDataSetChanged();
 
-                    if (photos.isEmpty()) {
+                    if (photoIds.isEmpty()) {
                         finish();
                     }
                 })

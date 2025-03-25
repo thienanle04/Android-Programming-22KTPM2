@@ -1,12 +1,13 @@
 package matos.csu.group3.utils;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import matos.csu.group3.data.local.entity.PhotoEntity;
 
 public class PhotoCache {
     private static PhotoCache instance;
-    private List<PhotoEntity> photoList;
+    private List<Integer> photoListIds;
 
     private PhotoCache() {}
 
@@ -18,14 +19,14 @@ public class PhotoCache {
     }
 
     public void setPhotoList(List<PhotoEntity> photos) {
-        this.photoList = photos;
+        this.photoListIds = photos.stream().map(PhotoEntity::getId).collect(Collectors.toList());
     }
 
-    public List<PhotoEntity> getPhotoList() {
-        return photoList;
+    public List<Integer> getPhotoListIds() {
+        return photoListIds;
     }
 
     public void clear() {
-        photoList = null;
+        photoListIds = null;
     }
 }

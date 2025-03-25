@@ -180,6 +180,18 @@ public class PhotoListOfAlbumActivity extends AppCompatActivity implements Photo
             if (photos != null) {
                 allPhotos.clear();
                 allPhotos.addAll(photos);
+                for (int i = 0; i < allPhotos.size() - 1; i++) {
+                    for (int j = i + 1; j < allPhotos.size(); j++) {
+                        PhotoEntity photo1 = allPhotos.get(i);
+                        PhotoEntity photo2 = allPhotos.get(j);
+
+                        // So sánh năm, tháng, ngày
+                        if (isNewer(photo2.getDateTaken(), photo1.getDateTaken())) {
+                            // Hoán đổi vị trí nếu photo2 mới hơn photo1
+                            Collections.swap(allPhotos, i, j);
+                        }
+                    }
+                }
                 photoAdapter.notifyDataSetChanged();
             }
         });
@@ -377,18 +389,6 @@ public class PhotoListOfAlbumActivity extends AppCompatActivity implements Photo
         }
     }
     private void showBigScreen(PhotoEntity photo) {
-        for (int i = 0; i < allPhotos.size() - 1; i++) {
-            for (int j = i + 1; j < allPhotos.size(); j++) {
-                PhotoEntity photo1 = allPhotos.get(i);
-                PhotoEntity photo2 = allPhotos.get(j);
-
-                // So sánh năm, tháng, ngày
-                if (isNewer(photo2.getDateTaken(), photo1.getDateTaken())) {
-                    // Hoán đổi vị trí nếu photo2 mới hơn photo1
-                    Collections.swap(allPhotos, i, j);
-                }
-            }
-        }
         PhotoCache.getInstance().setPhotoList(allPhotos);
         albumRepository.getNameByAlbumId(currentAlbumId).observe(this, albumName -> {
             Intent intent = new Intent(this, DisplaySinglePhotoActivity.class);
