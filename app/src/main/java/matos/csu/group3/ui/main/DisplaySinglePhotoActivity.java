@@ -15,6 +15,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.viewpager2.widget.ViewPager2;
 
@@ -37,13 +38,16 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
 
     private ViewPager2 viewPager;
     private TextView txtSoloMsg;
+    private Menu menu;
+    private MenuItem favouriteItem;
     private BottomNavigationView bottomNavigationView;
     private ImageButton btnSoloBack;
     private PhotoViewModel photoViewModel;
     private PhotoPagerAdapter photoPagerAdapter;
-    private List<PhotoEntity> photos = new ArrayList<>();
+    private List<Integer> photoIds;
     private int currentPosition;
     private PhotoRepository photoRepository;
+    private PhotoEntity currentPhoto;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,21 +64,20 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
         resetBottomNavSelection(bottomNavigationView);
         photoRepository = new PhotoRepository(getApplication());
 
+        menu = bottomNavigationView.getMenu();
+        favouriteItem = menu.findItem(R.id.action_favorite);
+
         // Lấy dữ liệu từ Intent
         Intent intent = getIntent();
-        if (intent != null && intent.hasExtra("photoEntity")) {
-            PhotoEntity photo = (PhotoEntity) intent.getSerializableExtra("photoEntity");
-            photos = PhotoCache.getInstance().getPhotoList();
+        if (intent != null) {
+            photoIds = PhotoCache.getInstance().getPhotoListIds();
             currentPosition = intent.getIntExtra("currentPosition", 0);
-            if (photo != null) {
-                updateCaption(photo);
-            }
+            loadCurrentPhoto();
+
         }
 
-        // Khởi tạo Adapter
-        photoPagerAdapter = new PhotoPagerAdapter(photos);
+        photoPagerAdapter = new PhotoPagerAdapter(photoIds, photoViewModel, this);
         viewPager.setAdapter(photoPagerAdapter);
-
         viewPager.setCurrentItem(currentPosition, false);
 
         // Lắng nghe sự kiện khi người dùng vuốt qua ảnh khác
@@ -83,13 +86,12 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
             public void onPageSelected(int position) {
                 super.onPageSelected(position);
                 currentPosition = position;
-                updateCaption(photos.get(position));
+                loadCurrentPhoto();
             }
         });
 
         // Xử lý sự kiện BottomNavigationView
         bottomNavigationView.setOnItemSelectedListener(item -> {
-            PhotoEntity currentPhoto = photos.get(currentPosition);
             if (item.getItemId() == R.id.action_share) {
                 if (currentPhoto != null) {
                     List<PhotoEntity> photosToShare = new ArrayList<>();
@@ -117,7 +119,6 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
                 return true;
             } else if (item.getItemId() == R.id.action_delete) {
                 Log.d("DisplaySinglePhoto", "Delete action triggered");
-                currentPhoto = photos.get(currentPosition);
                 if (currentPhoto != null) {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !Environment.isExternalStorageManager()) {
                         showManageStorageDialog();
@@ -134,6 +135,28 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
 
         // Nút quay lại
         btnSoloBack.setOnClickListener(v -> finish());
+    }
+    private void loadCurrentPhoto() {
+        if (isInvalidPosition()) return;
+
+        photoViewModel.getPhotoById(photoIds.get(currentPosition)).observe(this, new Observer<PhotoEntity>() {
+            @Override
+            public void onChanged(PhotoEntity photo) {
+                currentPhoto = photo;
+                if (photo != null) {
+                    updateCaption(photo);
+                    if (photo.isFavorite()) {
+                        favouriteItem.setIcon(R.drawable.ic_favorite_selected); // Icon khi được yêu thích
+                    } else {
+                        favouriteItem.setIcon(R.drawable.ic_favorite); // Icon mặc định
+                    }
+                }
+            }
+        });
+    }
+
+    private boolean isInvalidPosition() {
+        return photoIds == null || photoIds.isEmpty() || currentPosition < 0 || currentPosition >= photoIds.size();
     }
 
     private void updateCaption(PhotoEntity photo) {
@@ -164,13 +187,13 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
         setResult(RESULT_OK, resultIntent);
 
         // Update UI
-        photos.remove(photo);
+        photoIds.remove(photo.getId());
         photoPagerAdapter.notifyDataSetChanged();
 
         Toast.makeText(this, "Đã chuyển ảnh vào thùng rác", Toast.LENGTH_SHORT).show();
 
         // Close the activity if no photos are left
-        if (photos.isEmpty()) {
+        if (photoIds.isEmpty()) {
             Log.d("DisplaySinglePhoto", "No photos left, finishing activity");
             finish();
         }

@@ -40,11 +40,11 @@
         <!-- Icon search -->
         <androidx.appcompat.widget.AppCompatImageView
             android:id="@+id/search_mag_icon"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
+            android:layout_width="20dp"
+            android:layout_height="14dp"
             android:layout_marginStart="8dp"
-            app:tint="?attr/colorOnBackground"
-            android:src="@drawable/ic_search" />
+            android:src="@drawable/ic_search"
+            app:tint="?attr/colorOnBackground" />
 
         <!-- Icon Cloud -->
         <androidx.appcompat.widget.AppCompatImageView

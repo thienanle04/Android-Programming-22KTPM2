@@ -269,20 +269,6 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
     }
 
     private void showBigScreen(PhotoEntity photo) {
-        // Sort photos by date (newest first)
-        for (int i = 0; i < allPhotos.size() - 1; i++) {
-            for (int j = i + 1; j < allPhotos.size(); j++) {
-                PhotoEntity photo1 = allPhotos.get(i);
-                PhotoEntity photo2 = allPhotos.get(j);
-
-                // Compare dates
-                if (isNewer(photo2.getDateTaken(), photo1.getDateTaken())) {
-                    // Swap positions if photo2 is newer than photo1
-                    Collections.swap(allPhotos, i, j);
-                }
-            }
-        }
-
         // Cache the photo list
         PhotoCache.getInstance().setPhotoList(allPhotos);
 
@@ -486,7 +472,19 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
                 if (photoEntities != null && !photoEntities.isEmpty()) {
                     // Cập nhật danh sách ảnh
                     allPhotos = photoEntities;
+                    // Sort photos by date (newest first)
+                    for (int i = 0; i < allPhotos.size() - 1; i++) {
+                        for (int j = i + 1; j < allPhotos.size(); j++) {
+                            PhotoEntity photo1 = allPhotos.get(i);
+                            PhotoEntity photo2 = allPhotos.get(j);
 
+                            // Compare dates
+                            if (isNewer(photo2.getDateTaken(), photo1.getDateTaken())) {
+                                // Swap positions if photo2 is newer than photo1
+                                Collections.swap(allPhotos, i, j);
+                            }
+                        }
+                    }
                     // Nhóm ảnh theo ngày
                     photosByDate = groupPhotosByDate(photoEntities);
                     groupedList = convertToGroupedList(photosByDate);
