@@ -847,6 +847,12 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
                     R.id.customSearchView,
                     ConstraintSet.BOTTOM
             );
+            constraintSet.connect(
+                    R.id.photoRecyclerView,
+                    ConstraintSet.BOTTOM,
+                    R.id.bottomNavigationView,
+                    ConstraintSet.TOP
+            );
         } else {
             // Ràng buộc với topNavigationBar
             constraintSet.connect(
@@ -854,6 +860,12 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
                     ConstraintSet.TOP,
                     R.id.topNavigationBar,
                     ConstraintSet.BOTTOM
+            );
+            constraintSet.connect(
+                    R.id.photoRecyclerView,
+                    ConstraintSet.BOTTOM,
+                    R.id.bottomNavigationSelectionView,
+                    ConstraintSet.TOP
             );
         }
 
