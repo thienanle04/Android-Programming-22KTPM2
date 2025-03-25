@@ -45,11 +45,19 @@ public interface PhotoDao {
     @Query("SELECT * FROM photos WHERE id IN (SELECT photoId FROM photo_album WHERE albumId = :albumId)")
     LiveData<List<PhotoEntity>> getPhotosByAlbumId(int albumId);
 
+    @Query("SELECT p.* FROM photos p " +
+            "INNER JOIN photo_album pa ON p.id = pa.photoId " +
+            "WHERE pa.albumId = :albumId AND p.isDeleted != TRUE " +
+            "ORDER BY p.id DESC")
+    LiveData<List<PhotoEntity>> getNonDeletedPhotosByAlbumId(int albumId);
+
     // Lấy danh sách ảnh không thuộc album cụ thể
     @Query("SELECT * FROM photos WHERE id NOT IN (SELECT photoId FROM photo_album WHERE albumId = :currentAlbumId)")
     List<PhotoEntity> getPhotosNotInAlbum(int currentAlbumId);
     @Query("SELECT * FROM photos ORDER BY id DESC")
     List<PhotoEntity> getAllPhotosSync();
+    @Query("SELECT * FROM photos WHERE isDeleted != TRUE ORDER BY id DESC")
+    List<PhotoEntity> getAllNonDeletedPhotos();
     @Query("SELECT * FROM photos WHERE isDeleted != TRUE ORDER BY id DESC")
     LiveData<List<PhotoEntity>> getAllNonDeletedPhotosSync();
     // Delete a photo by ID

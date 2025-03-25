@@ -31,4 +31,10 @@ public interface AlbumDao {
     LiveData<AlbumEntity> getAlbumById(int albumId);
     @Query("SELECT * FROM albums WHERE name = :albumName LIMIT 1")
     AlbumEntity getAlbumByNameSync(String albumName);
+
+    @Query("SELECT name FROM albums WHERE id = :albumId LIMIT 1")
+    LiveData<String> getAlbumNameById(int albumId);
+
+    @Query("SELECT id FROM albums WHERE name = :albumName LIMIT 1")
+    LiveData<Integer> getAlbumIdByName(String albumName);
 }

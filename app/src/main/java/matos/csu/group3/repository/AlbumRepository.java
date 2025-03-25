@@ -4,6 +4,8 @@ import android.app.Application;
 import android.content.ContentResolver;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.MediaStore;
 import android.util.Log;
 
@@ -18,6 +20,8 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Consumer;
+
 import matos.csu.group3.data.local.AppDatabase;
 import matos.csu.group3.data.local.dao.AlbumDao;
 import matos.csu.group3.data.local.dao.PhotoAlbumDao;
@@ -51,7 +55,7 @@ public class AlbumRepository {
     private void loadAlbums() {
         executor.execute(() -> {
             // 1. Load và xử lý các album từ MediaStore như bình thường
-            List<PhotoEntity> photos = photoDao.getAllPhotosSync();
+            List<PhotoEntity> photos = photoDao.getAllNonDeletedPhotos();
 
             Map<String, List<PhotoEntity>> albumPhotoMap = new HashMap<>();
             for (PhotoEntity photo : photos) {
@@ -219,5 +223,19 @@ public class AlbumRepository {
     }
     public LiveData<List<PhotoAlbum>> getPhotosByAlbumId(int albumId){
         return photoAlbumDao.getPhotosByAlbumId(albumId);
+    }
+
+    public LiveData<List<PhotoAlbum>> getNonDeletedPhotosByAlbumId(int albumId){
+        return photoAlbumDao.getNonDeletedPhotosByAlbumId(albumId);
+    }
+
+    public LiveData<String> getNameByAlbumId(int albumId){
+        return albumDao.getAlbumNameById(albumId);
+    }
+    public void getTrashAlbum(Consumer<AlbumEntity> callback) {
+        executor.execute(() -> {
+            AlbumEntity trashAlbum = albumDao.getAlbumByNameSync("Trash");
+            new Handler(Looper.getMainLooper()).post(() -> callback.accept(trashAlbum));
+        });
     }
 }

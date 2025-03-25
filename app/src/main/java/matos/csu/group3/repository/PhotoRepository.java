@@ -23,13 +23,17 @@ import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.Transformations;
 import androidx.work.Data;
 import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkInfo;
 import androidx.work.WorkManager;
+
+import com.google.common.util.concurrent.ListenableFuture;
 
 import java.io.File;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -211,25 +215,42 @@ public class PhotoRepository {
         return future.get();
     }
     public LiveData<List<PhotoEntity>> getPhotosByAlbumId(int albumId) {
-        LiveData<List<PhotoEntity>> photosLiveData = photoDao.getPhotosByAlbumId(albumId);
+        // First get the album name to determine which query to use
+        LiveData<String> albumNameLiveData = albumDao.getAlbumNameById(albumId);
 
-        // Sắp xếp danh sách ảnh theo ngày chụp (từ mới nhất đến cũ nhất)
-        return Transformations.map(photosLiveData, photosList -> {
-            photosList.sort((photo1, photo2) -> {
-                SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
-                try {
-                    Date date1 = sdf.parse(photo1.getDateTaken());
-                    Date date2 = sdf.parse(photo2.getDateTaken());
-                    return date2.compareTo(date1); // Sắp xếp giảm dần (mới nhất trước)
-                } catch (ParseException e) {
-                    e.printStackTrace();
-                    new Handler(Looper.getMainLooper()).post(() -> {
-                        Toast.makeText(context, "Lỗi khi parse ngày: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                    });
-                    return 0;
+        return Transformations.switchMap(albumNameLiveData, albumName -> {
+            LiveData<List<PhotoEntity>> photosLiveData;
+
+            if ("Trash".equals(albumName)) {
+                // For Trash album, get all photos including deleted ones
+                photosLiveData = photoDao.getPhotosByAlbumId(albumId);
+            } else {
+                // For other albums, get only non-deleted photos
+                photosLiveData = photoDao.getNonDeletedPhotosByAlbumId(albumId);
+            }
+
+            // Sort the photos by date taken (newest first)
+            return Transformations.map(photosLiveData, photosList -> {
+                if (photosList == null) {
+                    return new ArrayList<>();
                 }
+
+                photosList.sort((photo1, photo2) -> {
+                    SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+                    try {
+                        Date date1 = sdf.parse(photo1.getDateTaken());
+                        Date date2 = sdf.parse(photo2.getDateTaken());
+                        return date2.compareTo(date1); // Sort descending (newest first)
+                    } catch (ParseException e) {
+                        e.printStackTrace();
+                        new Handler(Looper.getMainLooper()).post(() -> {
+                            Toast.makeText(context, "Lỗi khi parse ngày: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                        });
+                        return 0;
+                    }
+                });
+                return photosList;
             });
-            return photosList;
         });
     }
     public LiveData<PhotoEntity> getPhotoById (int photoId) {
@@ -422,11 +443,54 @@ public class PhotoRepository {
                 .putIntArray("photo_ids", photoIds)
                 .build();
 
-        OneTimeWorkRequest deleteWorkRequest = new OneTimeWorkRequest.Builder(DeletePhotosWorker.class)
-                .setInputData(inputData)
-                .setInitialDelay(3, TimeUnit.MINUTES)
-                .build();
+        // Create a unique tag for each photo's deletion work
+        for (PhotoEntity photo : photos) {
+            String workTag = "delete_photo_" + photo.getId();
 
-        WorkManager.getInstance(context).enqueue(deleteWorkRequest);
+            OneTimeWorkRequest deleteWorkRequest = new OneTimeWorkRequest.Builder(DeletePhotosWorker.class)
+                    .setInputData(inputData)
+                    .addTag(workTag)  // Unique tag for each photo
+                    .setInitialDelay(3, TimeUnit.MINUTES)
+                    .build();
+
+            WorkManager.getInstance(context).enqueue(deleteWorkRequest);
+            Log.d("WorkScheduling", "Scheduled deletion for photo: " + photo.getId());
+        }
+    }
+
+    //Restore photos
+    public void cancelScheduledDeletion(List<PhotoEntity> photos, Context context) {
+        WorkManager workManager = WorkManager.getInstance(context);
+
+        // Create unique tags for each photo's deletion work
+        for (PhotoEntity photo : photos) {
+            String workTag = "delete_photo_" + photo.getId();
+            workManager.cancelAllWorkByTag(workTag);
+            Log.d("WorkCancellation", "Cancelled work for photo: " + photo.getId());
+        }
+    }
+
+    public void restoreFromTrash(List<PhotoEntity> photos, int trashAlbumId, Runnable onComplete) {
+        executor.execute(() -> {
+            try {
+                for (PhotoEntity photo : photos) {
+                    // 1. Cancel scheduled deletion for this specific photo
+                    cancelScheduledDeletion(Collections.singletonList(photo), context);
+
+                    // 2. Remove from Trash album
+                    photoAlbumDao.deletePhotoFromAlbum(photo.getId(), trashAlbumId);
+
+                    // 3. Set isDeleted to false
+                    photo.setDeleted(false);
+                    photoDao.update(photo);
+
+                    Log.d("PhotoRestore", "Restored photo ID: " + photo.getId());
+                }
+                new Handler(Looper.getMainLooper()).post(onComplete);
+            } catch (Exception e) {
+                Log.e("PhotoRestore", "Error restoring photo", e);
+                new Handler(Looper.getMainLooper()).post(onComplete);
+            }
+        });
     }
 }

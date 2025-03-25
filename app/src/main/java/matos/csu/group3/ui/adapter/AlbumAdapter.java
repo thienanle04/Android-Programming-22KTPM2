@@ -81,38 +81,41 @@ public class AlbumAdapter extends RecyclerView.Adapter<AlbumAdapter.AlbumViewHol
     @Override
     public void onBindViewHolder(@NonNull AlbumViewHolder holder, int position) {
         AlbumEntity album = albumList.get(position);
-        holder.bind(album, listener, isSelectionMode); // Truyền isSelectionMode vào bind
+        holder.bind(album, listener, isSelectionMode);
 
-        // Quan sát tất cả ảnh trong album từ PhotoViewModel
         PhotoViewModel photoViewModel = new ViewModelProvider((ViewModelStoreOwner) lifecycleOwner).get(PhotoViewModel.class);
-        LiveData<List<PhotoAlbum>> photos = viewModel.getPhotosByAlbumId(album.getId());
+
+        // Determine if this is the Trash album
+        boolean isTrashAlbum = "Trash".equals(album.getName());
+
+        // Get photos based on album type
+        LiveData<List<PhotoAlbum>> photos = isTrashAlbum ?
+                viewModel.getPhotosByAlbumId(album.getId()) : // Get all photos for Trash
+                viewModel.getNonDeletedPhotosByAlbumId(album.getId()); // Get only non-deleted for others
 
         photos.observe(lifecycleOwner, photoAlbums -> {
             if (photoAlbums != null && !photoAlbums.isEmpty()) {
-                // Lấy ảnh đầu tiên trong danh sách
+                // Get the first photo (or last depending on your sorting)
                 PhotoAlbum firstPhotoAlbum = photoAlbums.get(photoAlbums.size() - 1);
 
-                // Lấy thông tin chi tiết của ảnh đầu tiên từ PhotoEntity
                 photoViewModel.getPhotoById(firstPhotoAlbum.getPhotoId()).observe(lifecycleOwner, photoEntity -> {
                     if (photoEntity != null) {
-                        // Load ảnh vào ImageView bằng Glide
+                        // Load image with Glide
                         Glide.with(holder.itemView.getContext())
                                 .load(new File(photoEntity.getFilePath()))
                                 .apply(new RequestOptions()
                                         .transform(new MultiTransformation<>(
-                                                new CenterCrop(), // Crop ảnh
-                                                new RoundedCorners(50) // Bo góc
+                                                new CenterCrop(),
+                                                new RoundedCorners(50)
                                         ))
-                                        .placeholder(R.drawable.ic_album) // Ảnh mặc định
+                                        .placeholder(R.drawable.ic_album)
                                 )
                                 .into(holder.folderImageView);
                     } else {
-                        // Nếu không có ảnh, hiển thị ảnh mặc định
                         holder.folderImageView.setImageResource(R.drawable.ic_album);
                     }
                 });
             } else {
-                // Nếu không có ảnh nào, hiển thị ảnh mặc định
                 holder.folderImageView.setImageResource(R.drawable.ic_album);
             }
         });

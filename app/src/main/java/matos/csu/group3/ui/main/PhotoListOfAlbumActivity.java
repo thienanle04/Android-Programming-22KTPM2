@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.res.Configuration;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.Button;
@@ -389,10 +390,13 @@ public class PhotoListOfAlbumActivity extends AppCompatActivity implements Photo
             }
         }
         PhotoCache.getInstance().setPhotoList(allPhotos);
-        Intent intent = new Intent(this, DisplaySinglePhotoActivity.class);
-        intent.putExtra("photoEntity", photo);
-        intent.putExtra("currentPosition", allPhotos.indexOf(photo));
-        startActivity(intent);
+        albumRepository.getNameByAlbumId(currentAlbumId).observe(this, albumName -> {
+            Intent intent = new Intent(this, DisplaySinglePhotoActivity.class);
+            intent.putExtra("photoEntity", photo);
+            intent.putExtra("currentPosition", allPhotos.indexOf(photo));
+            intent.putExtra("isTrashAlbum", "Trash".equals(albumName));
+            startActivity(intent);
+        });
     }
     private boolean isNewer(String date1, String date2) {
         // Tách ngày, tháng, năm từ date1

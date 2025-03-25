@@ -21,6 +21,11 @@ public interface PhotoAlbumDao {
     @Query("SELECT * FROM photo_album WHERE albumId = :albumId")
     LiveData<List<PhotoAlbum>> getPhotosByAlbumId(int albumId);
 
+    @Query("SELECT pa.* FROM photo_album pa " +
+            "INNER JOIN photos p ON pa.photoId = p.id " +
+            "WHERE pa.albumId = :albumId AND p.isDeleted != TRUE")
+    LiveData<List<PhotoAlbum>> getNonDeletedPhotosByAlbumId(int albumId);
+
     @Query("SELECT * FROM photo_album WHERE photoId = :photoId")
     List<PhotoAlbum> getAlbumsByPhotoId(int photoId);
     @Query("SELECT COUNT(*) FROM photo_album WHERE photoId = :photoId AND albumId = :albumId")

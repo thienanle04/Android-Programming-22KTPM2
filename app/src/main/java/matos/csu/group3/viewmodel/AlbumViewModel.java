@@ -50,4 +50,7 @@ public class AlbumViewModel extends AndroidViewModel {
     public LiveData<List<PhotoAlbum>> getPhotosByAlbumId(int albumId){
         return albumRepository.getPhotosByAlbumId(albumId);
     }
+    public LiveData<List<PhotoAlbum>> getNonDeletedPhotosByAlbumId(int albumId){
+        return albumRepository.getNonDeletedPhotosByAlbumId(albumId);
+    }
 }

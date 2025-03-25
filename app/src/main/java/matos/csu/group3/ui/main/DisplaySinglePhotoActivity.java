@@ -1,6 +1,7 @@
 package matos.csu.group3.ui.main;
 
 import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
@@ -23,10 +24,13 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import matos.csu.group3.R;
+import matos.csu.group3.data.local.entity.AlbumEntity;
 import matos.csu.group3.data.local.entity.PhotoEntity;
+import matos.csu.group3.repository.AlbumRepository;
 import matos.csu.group3.ui.adapter.PhotoPagerAdapter;
 import matos.csu.group3.ui.editor.CropAndRotateActivity;
 import matos.csu.group3.utils.PhotoCache;
@@ -44,6 +48,7 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
     private List<PhotoEntity> photos = new ArrayList<>();
     private int currentPosition;
     private PhotoRepository photoRepository;
+    private AlbumRepository albumRepository;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,15 +62,18 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
         txtSoloMsg = findViewById(R.id.txtSoloMsg);
         btnSoloBack = findViewById(R.id.btnSoloBack);
         bottomNavigationView = findViewById(R.id.bottomNavigationSinglePhotoView);
-        resetBottomNavSelection(bottomNavigationView);
+
         photoRepository = new PhotoRepository(getApplication());
+        albumRepository = new AlbumRepository(getApplication());
 
         // Lấy dữ liệu từ Intent
         Intent intent = getIntent();
+        boolean isTrashAlbum = false;
         if (intent != null && intent.hasExtra("photoEntity")) {
             PhotoEntity photo = (PhotoEntity) intent.getSerializableExtra("photoEntity");
             photos = PhotoCache.getInstance().getPhotoList();
             currentPosition = intent.getIntExtra("currentPosition", 0);
+            isTrashAlbum = intent.getBooleanExtra("isTrashAlbum", false);
             if (photo != null) {
                 updateCaption(photo);
             }
@@ -88,49 +96,8 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
         });
 
         // Xử lý sự kiện BottomNavigationView
-        bottomNavigationView.setOnItemSelectedListener(item -> {
-            PhotoEntity currentPhoto = photos.get(currentPosition);
-            if (item.getItemId() == R.id.action_share) {
-                if (currentPhoto != null) {
-                    List<PhotoEntity> photosToShare = new ArrayList<>();
-                    photosToShare.add(currentPhoto);
-                    PhotoListOfAlbumActivity.sharePhotosViaPackage(DisplaySinglePhotoActivity.this, photosToShare);
-                } else {
-                    Toast.makeText(this, "Không có ảnh để chia sẻ", Toast.LENGTH_SHORT).show();
-                }
-                return true;
-            } else if (item.getItemId() == R.id.action_edit) {
-                if (currentPhoto != null) {
-                    Intent cropIntent = new Intent(DisplaySinglePhotoActivity.this, CropAndRotateActivity.class);
-                    cropIntent.setData(Uri.fromFile(new File(currentPhoto.getFilePath())));
-                    cropIntent.putExtra("photoEntity", currentPhoto);
-                    startActivity(cropIntent);
-                }
-                return true;
-            } else if (item.getItemId() == R.id.action_favorite) {
-                if (currentPhoto != null) {
-                    boolean isFavorite = !currentPhoto.isFavorite();
-                    currentPhoto.setFavorite(isFavorite);
-                    photoViewModel.updateFavoriteStatus(currentPhoto, isFavorite);
-                    updateFavoriteIcon(item, isFavorite);
-                }
-                return true;
-            } else if (item.getItemId() == R.id.action_delete) {
-                Log.d("DisplaySinglePhoto", "Delete action triggered");
-                currentPhoto = photos.get(currentPosition);
-                if (currentPhoto != null) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !Environment.isExternalStorageManager()) {
-                        showManageStorageDialog();
-                        return true;
-                    }
-                    showDeleteConfirmationDialog(currentPhoto);
-                } else {
-                    Log.e("DisplaySinglePhoto", "Current photo is null");
-                }
-                return true;
-            }
-            return false;
-        });
+        setupBottomNavigationMenu(isTrashAlbum);
+        resetBottomNavSelection(bottomNavigationView);
 
         // Nút quay lại
         btnSoloBack.setOnClickListener(v -> finish());
@@ -213,5 +180,134 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
             bottomNavView.getMenu().getItem(i).setChecked(false);
         }
         bottomNavView.getMenu().setGroupCheckable(0, true, true);
+    }
+
+    private void setupBottomNavigationMenu(boolean isTrashAlbum) {
+        // Inflate the appropriate menu
+        bottomNavigationView.getMenu().clear();
+        bottomNavigationView.inflateMenu(isTrashAlbum ?
+                R.menu.bottom_nav_menu_trash_album :
+                R.menu.bottom_nav_menu_single_photo);
+
+        // Set up the item selected listener
+        bottomNavigationView.setOnItemSelectedListener(item -> {
+            PhotoEntity currentPhoto = photos.get(currentPosition);
+            if (item.getItemId() == R.id.action_share) {
+                if (currentPhoto != null) {
+                    List<PhotoEntity> photosToShare = new ArrayList<>();
+                    photosToShare.add(currentPhoto);
+                    PhotoListOfAlbumActivity.sharePhotosViaPackage(DisplaySinglePhotoActivity.this, photosToShare);
+                } else {
+                    Toast.makeText(this, "Không có ảnh để chia sẻ", Toast.LENGTH_SHORT).show();
+                }
+                return true;
+            } else if (item.getItemId() == R.id.action_edit) {
+                if (currentPhoto != null) {
+                    Intent cropIntent = new Intent(DisplaySinglePhotoActivity.this, CropAndRotateActivity.class);
+                    cropIntent.setData(Uri.fromFile(new File(currentPhoto.getFilePath())));
+                    cropIntent.putExtra("photoEntity", currentPhoto);
+                    startActivity(cropIntent);
+                }
+                return true;
+            } else if (item.getItemId() == R.id.action_favorite) {
+                if (currentPhoto != null) {
+                    boolean isFavorite = !currentPhoto.isFavorite();
+                    currentPhoto.setFavorite(isFavorite);
+                    photoViewModel.updateFavoriteStatus(currentPhoto, isFavorite);
+                    updateFavoriteIcon(item, isFavorite);
+                }
+                return true;
+            } else if (item.getItemId() == R.id.action_delete) {
+                if (currentPhoto != null) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !Environment.isExternalStorageManager()) {
+                        showManageStorageDialog();
+                        return true;
+                    }
+                    showDeleteConfirmationDialog(currentPhoto);
+                }
+                return true;
+            } else if (item.getItemId() == R.id.action_restore) {
+                if (currentPhoto != null) {
+                    restorePhoto(currentPhoto);
+                    return true;
+                }
+                return true;
+            }
+            else if (item.getItemId() == R.id.action_delete2) {
+                if (currentPhoto != null) {
+                    showPermanentDeleteConfirmation(currentPhoto);
+                    return true;
+                }
+                return true;
+            }
+            return false;
+        });
+    }
+
+    private void restorePhoto(PhotoEntity photo) {
+        // Show loading indicator if needed
+        ProgressDialog progressDialog = new ProgressDialog(this);
+        progressDialog.setMessage("Đang xử lý...");
+        progressDialog.setCancelable(false);
+        progressDialog.show();
+
+        albumRepository.getTrashAlbum(trashAlbum -> {
+            progressDialog.dismiss();
+
+            if (trashAlbum == null) {
+                Toast.makeText(this, "Không tìm thấy album thùng rác", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            new AlertDialog.Builder(this)
+                    .setTitle("Khôi phục ảnh")
+                    .setMessage("Bạn có chắc chắn muốn khôi phục ảnh này?")
+                    .setPositiveButton("Khôi phục", (dialog, which) -> {
+                        // Show loading again for the restore operation
+                        progressDialog.show();
+
+                        photoRepository.restoreFromTrash(
+                                Collections.singletonList(photo),
+                                trashAlbum.getId(),
+                                () -> {
+                                    // This callback runs when restore is complete
+                                    progressDialog.dismiss();
+                                    runOnUiThread(() -> {
+                                        Toast.makeText(this, "Đã khôi phục ảnh", Toast.LENGTH_SHORT).show();
+
+                                        // Update UI
+                                        photos.remove(photo);
+                                        photoPagerAdapter.notifyDataSetChanged();
+
+                                        if (photos.isEmpty()) {
+                                            finish();
+                                        }
+                                    });
+                                }
+                        );
+                    })
+                    .setNegativeButton("Hủy", null)
+                    .show();
+        });
+    }
+
+    private void showPermanentDeleteConfirmation(PhotoEntity photo) {
+        new AlertDialog.Builder(this)
+                .setTitle("Xóa vĩnh viễn")
+                .setMessage("Bạn có chắc chắn muốn xóa vĩnh viễn ảnh này?")
+                .setPositiveButton("Xóa", (dialog, which) -> {
+                    photoRepository.deletePhotoById(photo.getId());
+                    Toast.makeText(this, "Đã xóa ảnh vĩnh viễn", Toast.LENGTH_SHORT).show();
+
+                    // Update UI
+                    photos.remove(photo);
+                    photoPagerAdapter.notifyDataSetChanged();
+
+                    if (photos.isEmpty()) {
+                        finish();
+                    }
+                })
+                .setNegativeButton("Hủy", null)
+                .show();
     }
 }
