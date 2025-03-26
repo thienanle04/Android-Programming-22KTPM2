@@ -154,7 +154,7 @@ public class PhotoRepository {
             }
 
             // Cập nhật LiveData với danh sách ảnh mới nhất từ cơ sở dữ liệu
-            allPhotos.postValue(photoDao.getAllPhotos().getValue());
+            allPhotos.postValue(photoList);
         });
     }
 

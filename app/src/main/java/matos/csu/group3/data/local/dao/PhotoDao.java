@@ -42,13 +42,14 @@ public interface PhotoDao {
     @Query("SELECT * FROM photos WHERE filePath = :filePath LIMIT 1")
     PhotoEntity getPhotoByFilePath(String filePath);
     // Lấy danh sách ảnh thuộc một album cụ thể
-    @Query("SELECT * FROM photos WHERE id IN (SELECT photoId FROM photo_album WHERE albumId = :albumId)")
+    @Query("SELECT * FROM photos WHERE id IN (SELECT photoId FROM photo_album WHERE albumId = :albumId)"
+    + "ORDER BY dateTimestamp DESC")
     LiveData<List<PhotoEntity>> getPhotosByAlbumId(int albumId);
 
     @Query("SELECT p.* FROM photos p " +
             "INNER JOIN photo_album pa ON p.id = pa.photoId " +
             "WHERE pa.albumId = :albumId AND p.isDeleted != TRUE " +
-            "ORDER BY p.id DESC")
+            "ORDER BY p.dateTimestamp DESC")
     LiveData<List<PhotoEntity>> getNonDeletedPhotosByAlbumId(int albumId);
 
     // Lấy danh sách ảnh không thuộc album cụ thể
@@ -58,7 +59,7 @@ public interface PhotoDao {
     List<PhotoEntity> getAllPhotosSync();
     @Query("SELECT * FROM photos WHERE isDeleted != TRUE ORDER BY id DESC")
     List<PhotoEntity> getAllNonDeletedPhotos();
-    @Query("SELECT * FROM photos WHERE isDeleted != TRUE ORDER BY id DESC")
+    @Query("SELECT * FROM photos WHERE isDeleted != TRUE ORDER BY dateTimestamp DESC")
     LiveData<List<PhotoEntity>> getAllNonDeletedPhotosSync();
     // Delete a photo by ID
     @Query("DELETE FROM photos WHERE id = :photoId")

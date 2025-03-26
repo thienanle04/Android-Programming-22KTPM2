@@ -180,18 +180,6 @@ public class PhotoListOfAlbumActivity extends AppCompatActivity implements Photo
             if (photos != null) {
                 allPhotos.clear();
                 allPhotos.addAll(photos);
-                for (int i = 0; i < allPhotos.size() - 1; i++) {
-                    for (int j = i + 1; j < allPhotos.size(); j++) {
-                        PhotoEntity photo1 = allPhotos.get(i);
-                        PhotoEntity photo2 = allPhotos.get(j);
-
-                        // So sánh năm, tháng, ngày
-                        if (isNewer(photo2.getDateTaken(), photo1.getDateTaken())) {
-                            // Hoán đổi vị trí nếu photo2 mới hơn photo1
-                            Collections.swap(allPhotos, i, j);
-                        }
-                    }
-                }
                 photoAdapter.notifyDataSetChanged();
             }
         });
@@ -397,40 +385,6 @@ public class PhotoListOfAlbumActivity extends AppCompatActivity implements Photo
             intent.putExtra("isTrashAlbum", "Trash".equals(albumName));
             startActivity(intent);
         });
-    }
-    private boolean isNewer(String date1, String date2) {
-        // Tách ngày, tháng, năm từ date1
-        String[] parts1 = date1.split("/");
-        int day1 = Integer.parseInt(parts1[0]);
-        int month1 = Integer.parseInt(parts1[1]);
-        int year1 = Integer.parseInt(parts1[2]);
-
-        // Tách ngày, tháng, năm từ date2
-        String[] parts2 = date2.split("/");
-        int day2 = Integer.parseInt(parts2[0]);
-        int month2 = Integer.parseInt(parts2[1]);
-        int year2 = Integer.parseInt(parts2[2]);
-
-        // So sánh năm
-        if (year1 > year2) {
-            return true;
-        } else if (year1 < year2) {
-            return false;
-        }
-
-        // Nếu năm bằng nhau, so sánh tháng
-        if (month1 > month2) {
-            return true;
-        } else if (month1 < month2) {
-            return false;
-        }
-
-        // Nếu tháng bằng nhau, so sánh ngày
-        if (day1 > day2) {
-            return true;
-        } else {
-            return false;
-        }
     }
 
     public static void sharePhotosViaPackage(Context context, List<PhotoEntity> photos) {

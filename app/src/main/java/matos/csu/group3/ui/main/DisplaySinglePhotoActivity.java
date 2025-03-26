@@ -156,7 +156,7 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
         setResult(RESULT_OK, resultIntent);
 
         // Update UI
-        photoIds.remove(photo.getId());
+        photoIds.remove(Integer.valueOf(photo.getId()));
         photoPagerAdapter.notifyDataSetChanged();
 
         Toast.makeText(this, "Đã chuyển ảnh vào thùng rác", Toast.LENGTH_SHORT).show();
@@ -300,6 +300,7 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
                                         Toast.makeText(this, "Đã khôi phục ảnh", Toast.LENGTH_SHORT).show();
 
                                         // Update UI
+                                        photoIds.remove(Integer.valueOf(photo.getId()));
                                         photoPagerAdapter.notifyDataSetChanged();
 
                                         if (photoIds.isEmpty()) {

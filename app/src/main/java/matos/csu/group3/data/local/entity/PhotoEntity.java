@@ -3,6 +3,9 @@ package matos.csu.group3.data.local.entity;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 import java.io.Serializable;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Locale;
 import java.util.Objects;
 
 @Entity(tableName = "photos")
@@ -15,6 +18,7 @@ public class PhotoEntity implements Serializable{
     private String filePath;          // File path to the photo
     private String name;              // Name of the photo (e.g., image name)
     private String dateTaken;         // Date the photo was taken
+    private long dateTimestamp;
     private String location;          // Location where the photo was taken
     private int albumId;              // ID of the album to which the photo belongs
     private boolean isFavorite;       // Flag to mark the photo as a favorite
@@ -63,6 +67,15 @@ public class PhotoEntity implements Serializable{
 
     public void setDateTaken(String dateTaken) {
         this.dateTaken = dateTaken;
+        this.dateTimestamp = convertDateToTimestamp(dateTaken);
+    }
+    private long convertDateToTimestamp(String date) {
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+        try {
+            return sdf.parse(date).getTime();
+        } catch (ParseException e) {
+            return 0; // Hoặc xử lý lỗi phù hợp
+        }
     }
 
     // Getter and Setter for location
@@ -174,6 +187,14 @@ public class PhotoEntity implements Serializable{
 
     public void setSelected(boolean isChecked) {
         this.selected = isChecked;
+    }
+
+    public long getDateTimestamp() {
+        return dateTimestamp;
+    }
+
+    public void setDateTimestamp(long dateTimestamp) {
+        this.dateTimestamp = dateTimestamp;
     }
 }
 

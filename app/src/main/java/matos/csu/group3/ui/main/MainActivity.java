@@ -278,41 +278,6 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
         intent.putExtra("currentPosition", allPhotos.indexOf(photo));
         startActivityForResult(intent, REQUEST_CODE_DISPLAY_PHOTO);
     }
-    private boolean isNewer(String date1, String date2) {
-        // Tách ngày, tháng, năm từ date1
-        String[] parts1 = date1.split("/");
-        int day1 = Integer.parseInt(parts1[0]);
-        int month1 = Integer.parseInt(parts1[1]);
-        int year1 = Integer.parseInt(parts1[2]);
-
-        // Tách ngày, tháng, năm từ date2
-        String[] parts2 = date2.split("/");
-        int day2 = Integer.parseInt(parts2[0]);
-        int month2 = Integer.parseInt(parts2[1]);
-        int year2 = Integer.parseInt(parts2[2]);
-
-        // So sánh năm
-        if (year1 > year2) {
-            return true;
-        } else if (year1 < year2) {
-            return false;
-        }
-
-        // Nếu năm bằng nhau, so sánh tháng
-        if (month1 > month2) {
-            return true;
-        } else if (month1 < month2) {
-            return false;
-        }
-
-        // Nếu tháng bằng nhau, so sánh ngày
-        if (day1 > day2) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
     private void initializeViews() {
         topNavigationBar = findViewById(R.id.topNavigationBar);
         customSearchView = findViewById(R.id.customSearchView);
@@ -472,19 +437,6 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
                 if (photoEntities != null && !photoEntities.isEmpty()) {
                     // Cập nhật danh sách ảnh
                     allPhotos = photoEntities;
-                    // Sort photos by date (newest first)
-                    for (int i = 0; i < allPhotos.size() - 1; i++) {
-                        for (int j = i + 1; j < allPhotos.size(); j++) {
-                            PhotoEntity photo1 = allPhotos.get(i);
-                            PhotoEntity photo2 = allPhotos.get(j);
-
-                            // Compare dates
-                            if (isNewer(photo2.getDateTaken(), photo1.getDateTaken())) {
-                                // Swap positions if photo2 is newer than photo1
-                                Collections.swap(allPhotos, i, j);
-                            }
-                        }
-                    }
                     // Nhóm ảnh theo ngày
                     photosByDate = groupPhotosByDate(photoEntities);
                     groupedList = convertToGroupedList(photosByDate);
