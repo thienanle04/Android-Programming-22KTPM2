@@ -1,73 +1,68 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:padding="16dp">
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="?attr/backgroundColor"
+    android:paddingBottom="0dp"
+    android:fitsSystemWindows="true">
 
     <!-- Top Navigation Bar -->
     <LinearLayout
         android:id="@+id/topNavigationBar"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
+        android:layout_height="?attr/actionBarSize"
         android:background="?attr/colorPrimary"
-        android:paddingVertical="12dp"
-        android:paddingHorizontal="16dp"
-        android:visibility="gone">
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingHorizontal="16dp">
 
-        <!-- Nút Back -->
         <ImageButton
             android:id="@+id/btnBack"
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:src="@drawable/ic_close"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:padding="12dp"
+            android:src="@drawable/ic_close"
             app:tint="@android:color/white" />
 
-        <!-- TextView hiển thị số lượng ảnh đã chọn -->
         <TextView
             android:id="@+id/tvSelectedCount"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:textColor="@android:color/white"
-            android:textSize="16sp"
             android:gravity="center"
-            android:paddingHorizontal="8dp"
-            android:paddingVertical="12dp" />
+            android:text="Chọn mục"
+            android:textColor="@android:color/white"
+            android:textSize="16sp" />
 
-        <!-- Nút Chọn Tất Cả -->
         <ImageButton
             android:id="@+id/btnSelectAll"
             android:layout_width="48dp"
             android:layout_height="48dp"
-            android:src="@drawable/ic_selectall"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:padding="12dp"
+            android:src="@drawable/ic_selectall"
             app:tint="@android:color/white" />
     </LinearLayout>
 
-    <!-- RecyclerView -->
+    <!-- RecyclerView for photos -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/photoRecyclerView"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/topNavigationBar"
-        android:layout_above="@id/btnAddSelected"
-        android:layout_marginTop="16dp"
-        tools:listitem="@layout/item_photo" />
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:padding="0dp" />
 
-    <!-- Nút Thêm Ảnh Đã Chọn -->
+    <!-- Add Selected Button -->
     <Button
         android:id="@+id/btnAddSelected"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Add Selected"
-        android:layout_alignParentBottom="true"
-        android:layout_marginTop="16dp"
         android:backgroundTint="?attr/colorPrimary"
-        android:textColor="@android:color/white" />
-</RelativeLayout>
+        android:text="Thêm ảnh đã chọn"
+        android:textAllCaps="false"
+        android:textColor="@android:color/white"
+        android:layout_marginBottom="0dp"/>
+</LinearLayout>
