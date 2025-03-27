@@ -41,8 +41,10 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -51,6 +53,8 @@ import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.bottomsheet.BottomSheetBehavior;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.navigation.NavigationBarView;
 import com.yalantis.ucrop.UCrop;
@@ -525,76 +529,70 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
                 .show();
     }
     private void showAlbumSelectionDialog() {
-        // Tạo dialog
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        // Tạo BottomSheetDialog
+        BottomSheetDialog dialog = new BottomSheetDialog(this);
         View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_select_album, null);
-        builder.setView(dialogView);
+        dialog.setContentView(dialogView);
+
+        // Thiết lập chiều cao tối đa cho dialog
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+        }
 
         // Ánh xạ view
         RecyclerView dialogRecyclerView = dialogView.findViewById(R.id.albumRecyclerView);
         Button btnConfirm = dialogView.findViewById(R.id.btnConfirm);
+        ImageButton btnClose = dialogView.findViewById(R.id.btnClose);
 
-        // Thiết lập RecyclerView
-        dialogRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-        AlbumAdapter adapter = new AlbumAdapter(new ArrayList<>(), new AlbumAdapter.OnItemClickListener() {
-            @Override
-            public void onItemClick(AlbumEntity album) {
-                // Xử lý sự kiện click
+        // Thiết lập GridLayoutManager với 3 cột
+        GridLayoutManager gridLayoutManager = new GridLayoutManager(this, 3);
+        dialogRecyclerView.setLayoutManager(gridLayoutManager);
 
-            }
-        },albumViewModel, this);
+        // Khởi tạo adapter
+        AlbumAdapter adapter = new AlbumAdapter(new ArrayList<>(), album -> {
+            // Xử lý sự kiện click item
+        }, albumViewModel, this);
 
-        // Lấy danh sách các album từ repository
+        // Lấy dữ liệu album
         AlbumViewModel albumViewModel = new ViewModelProvider(this).get(AlbumViewModel.class);
-        albumViewModel.getAllAlbums().observe(this, new Observer<List<AlbumEntity>>() {
-            @Override
-            public void onChanged(List<AlbumEntity> albumEntities) {
-                // Cập nhật danh sách album đã lọc vào adapter
-                adapter.updateData(albumEntities);
-            }
+        albumViewModel.getAllAlbums().observe(this, albumEntities -> {
+            adapter.updateData(albumEntities);
         });
+
         adapter.setSelectionMode(true);
         dialogRecyclerView.setAdapter(adapter);
 
-        AlertDialog dialog = builder.create();
+        // Xử lý nút đóng
+        btnClose.setOnClickListener(v -> dialog.dismiss());
 
-        // Xử lý nút Xác nhận
+        // Xử lý nút xác nhận
         btnConfirm.setOnClickListener(v -> {
-            // Lấy danh sách các album đã được chọn
             List<AlbumEntity> selectedAlbums = adapter.getSelectedAlbums();
-
-            // Kiểm tra nếu có ít nhất một album được chọn
             if (!selectedAlbums.isEmpty()) {
-                // Lấy danh sách các ảnh đã chọn
                 List<PhotoEntity> selectedPhotos = allPhotos.stream()
                         .filter(PhotoEntity::isSelected)
                         .collect(Collectors.toList());
 
-                // Đặt lại trạng thái isSelected = false cho tất cả ảnh trong allPhotos
-                for (PhotoEntity photo : allPhotos) {
-                    photo.setSelected(false);
-                }
-
-                // Thêm các ảnh đã chọn vào từng album được chọn
                 for (AlbumEntity selectedAlbum : selectedAlbums) {
                     addPhotosToAlbum(selectedPhotos, selectedAlbum.getId());
                 }
-
-                // Đóng dialog
-                Toast.makeText(this, "Đã thêm ảnh vào album", Toast.LENGTH_SHORT).show();
                 dialog.dismiss();
             } else {
                 Toast.makeText(this, "Vui lòng chọn ít nhất một album", Toast.LENGTH_SHORT).show();
             }
-            photoAdapter.setSelectionMode(false); // Tắt chế độ chọn ảnh
-            topNavigationBar.setVisibility(View.GONE); // Ẩn top navigation bar
-            customSearchView.setVisibility(View.VISIBLE);
-            bottomNavigationSelectionView.setVisibility(View.GONE);
-            bottomNavigationView.setVisibility(View.VISIBLE);
-            updateRecyclerViewConstraints(true);
         });
 
+        // Hiển thị dialog
         dialog.show();
+
+        // Tùy chỉnh behavior để có thể kéo xuống mọi lúc
+        FrameLayout bottomSheet = dialog.findViewById(com.google.android.material.R.id.design_bottom_sheet);
+        if (bottomSheet != null) {
+            BottomSheetBehavior<FrameLayout> behavior = BottomSheetBehavior.from(bottomSheet);
+            behavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+            behavior.setSkipCollapsed(true);
+            behavior.setHideable(true);
+        }
     }
     private void addPhotosToAlbum(List<PhotoEntity> photos, int albumID){
         photoRepository.addPhotosToAlbum(albumID, photos);

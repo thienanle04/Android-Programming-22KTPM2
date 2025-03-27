@@ -4,17 +4,23 @@ import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Configuration;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
 import androidx.lifecycle.Observer;
@@ -25,6 +31,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import androidx.room.Room;
 
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.bottomsheet.BottomSheetBehavior;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.io.File;
@@ -193,143 +201,160 @@ public class PhotoListOfAlbumActivity extends AppCompatActivity implements Photo
     }
 
     private void showPhotoSelectionDialog() {
+        // Lấy danh sách ảnh không có trong album hiện tại
         List<PhotoEntity> photosNotInAlbum = new ArrayList<>();
         try {
             photosNotInAlbum = photoRepository.getPhotosNotInAlbum(currentAlbumId);
         } catch (InterruptedException e) {
             e.printStackTrace();
             Thread.currentThread().interrupt();
+            return;
         } catch (ExecutionException e) {
             e.printStackTrace();
+            return;
         }
 
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        // Tạo BottomSheetDialog
+        BottomSheetDialog dialog = new BottomSheetDialog(this, R.style.BottomSheetDialogTheme);
         View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_select_photos, null);
-        builder.setView(dialogView);
+        dialog.setContentView(dialogView);
+
+        // Thiết lập chiều cao tối đa cho dialog
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+            dialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        }
+
+        // Tùy chỉnh behavior để có thể kéo xuống mọi lúc
+        FrameLayout bottomSheet = dialog.findViewById(com.google.android.material.R.id.design_bottom_sheet);
+        if (bottomSheet != null) {
+            BottomSheetBehavior<FrameLayout> behavior = BottomSheetBehavior.from(bottomSheet);
+            behavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+            behavior.setSkipCollapsed(true);
+            behavior.setHideable(true);
+        }
 
         // Ánh xạ view
-        LinearLayout topNavigationBar = dialogView.findViewById(R.id.topNavigationBar);
         ImageButton btnBack = dialogView.findViewById(R.id.btnBack);
         TextView tvSelectedCount = dialogView.findViewById(R.id.tvSelectedCount);
-        tvSelectedCount.setText("Chon mục");
         ImageButton btnSelectAll = dialogView.findViewById(R.id.btnSelectAll);
-        RecyclerView dialogRecyclerView = dialogView.findViewById(R.id.photoRecyclerView);
+        RecyclerView photoRecyclerView = dialogView.findViewById(R.id.photoRecyclerView);
         Button btnAddSelected = dialogView.findViewById(R.id.btnAddSelected);
 
         // Thiết lập RecyclerView
-        dialogRecyclerView.setLayoutManager(new GridLayoutManager(this, 3));
+        GridLayoutManager layoutManager = new GridLayoutManager(this, 3);
+        photoRecyclerView.setLayoutManager(layoutManager);
+
+        // Tạo adapter
         List<PhotoEntity> finalPhotosNotInAlbum = photosNotInAlbum;
         PhotoSelectionAdapter adapter = new PhotoSelectionAdapter(photosNotInAlbum, (photo, isSelected) -> {
             // Cập nhật số lượng ảnh đã chọn
             int selectedCount = (int) finalPhotosNotInAlbum.stream().filter(PhotoEntity::isSelected).count();
-            if(selectedCount == 0){
-                tvSelectedCount.setText("Chon mục");
-            }
-            else
-                tvSelectedCount.setText("Đã chọn " + selectedCount + " mục");
+            tvSelectedCount.setText(selectedCount > 0 ?
+                    "Đã chọn " + selectedCount + " mục" : "Chọn mục");
         }, true);
-        dialogRecyclerView.setAdapter(adapter);
 
-        topNavigationBar.setVisibility(View.VISIBLE);
-        AlertDialog dialog = builder.create();
+        photoRecyclerView.setAdapter(adapter);
 
         // Xử lý nút Back
-        btnBack.setOnClickListener(v -> {
-            adapter.setSelectionMode(false); // Tắt chế độ chọn ảnh
-            topNavigationBar.setVisibility(View.GONE); // Ẩn topNavigationBar
-            dialog.dismiss();
-        });
+        btnBack.setOnClickListener(v -> dialog.dismiss());
 
         // Xử lý nút Chọn Tất Cả
+
         btnSelectAll.setOnClickListener(v -> {
             boolean isAllSelected = adapter.isAllSelected();
-            adapter.selectAll(!isAllSelected); // Đảo ngược trạng thái chọn
+            adapter.selectAll(!isAllSelected);
             int selectedCount = (int) finalPhotosNotInAlbum.stream().filter(PhotoEntity::isSelected).count();
-            if(selectedCount == 0){
-                tvSelectedCount.setText("Chon mục");
-            }
-            else
-                tvSelectedCount.setText("Đã chọn " + selectedCount + " mục");
+            tvSelectedCount.setText(selectedCount > 0 ?
+                    "Đã chọn " + selectedCount + " mục" : "Chọn mục");
         });
 
         // Xử lý nút Thêm Ảnh Đã Chọn
-
-        List<PhotoEntity> finalPhotosNotInAlbum1 = photosNotInAlbum;
         btnAddSelected.setOnClickListener(v -> {
-            List<PhotoEntity> selectedPhotos = finalPhotosNotInAlbum1.stream()
+            List<PhotoEntity> selectedPhotos = finalPhotosNotInAlbum.stream()
                     .filter(PhotoEntity::isSelected)
                     .collect(Collectors.toList());
-            addPhotosToAlbum(selectedPhotos);
-            selectedPhotos.forEach(photo -> photo.setSelected(false));
-            dialog.dismiss();
+
+            if (!selectedPhotos.isEmpty()) {
+                addPhotosToAlbum(selectedPhotos);
+                selectedPhotos.forEach(photo -> photo.setSelected(false));
+                dialog.dismiss();
+            } else {
+                Toast.makeText(this, "Vui lòng chọn ít nhất một ảnh", Toast.LENGTH_SHORT).show();
+            }
         });
 
+        // Hiển thị dialog
         dialog.show();
     }
     private void showAlbumSelectionDialog() {
-        // Tạo dialog
-        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        // Tạo BottomSheetDialog
+        BottomSheetDialog dialog = new BottomSheetDialog(this);
         View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_select_album, null);
-        builder.setView(dialogView);
+        dialog.setContentView(dialogView);
+
+        // Thiết lập chiều cao tối đa cho dialog
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+        }
 
         // Ánh xạ view
         RecyclerView dialogRecyclerView = dialogView.findViewById(R.id.albumRecyclerView);
         Button btnConfirm = dialogView.findViewById(R.id.btnConfirm);
+        ImageButton btnClose = dialogView.findViewById(R.id.btnClose);
 
-        // Thiết lập RecyclerView
-        dialogRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-        AlbumAdapter adapter = new AlbumAdapter(new ArrayList<>(), new AlbumAdapter.OnItemClickListener() {
-            @Override
-            public void onItemClick(AlbumEntity album) {
-                // Xử lý sự kiện click
+        // Thiết lập GridLayoutManager với 3 cột
+        GridLayoutManager gridLayoutManager = new GridLayoutManager(this, 3);
+        dialogRecyclerView.setLayoutManager(gridLayoutManager);
 
-            }
+        // Khởi tạo adapter
+        AlbumAdapter adapter = new AlbumAdapter(new ArrayList<>(), album -> {
+            // Xử lý sự kiện click item
         }, albumViewModel, this);
 
-        // Lấy danh sách các album từ repository
+        // Lấy dữ liệu album
         AlbumViewModel albumViewModel = new ViewModelProvider(this).get(AlbumViewModel.class);
-        albumViewModel.getAllAlbums().observe(this, new Observer<List<AlbumEntity>>() {
-            @Override
-            public void onChanged(List<AlbumEntity> albumEntities) {
-                // Lọc danh sách album, loại bỏ album có ID trùng với currentAlbumId
-                List<AlbumEntity> filteredAlbums = albumEntities.stream()
-                        .filter(album -> album.getId() != currentAlbumId)
-                        .collect(Collectors.toList());
-
-                // Cập nhật danh sách album đã lọc vào adapter
-                adapter.updateData(filteredAlbums);
-            }
+        albumViewModel.getAllAlbums().observe(this, albumEntities -> {
+            List<AlbumEntity> filteredAlbums = albumEntities.stream()
+                    .filter(album -> album.getId() != currentAlbumId)
+                    .collect(Collectors.toList());
+            adapter.updateData(filteredAlbums);
         });
+
         adapter.setSelectionMode(true);
         dialogRecyclerView.setAdapter(adapter);
 
-        AlertDialog dialog = builder.create();
+        // Xử lý nút đóng
+        btnClose.setOnClickListener(v -> dialog.dismiss());
 
-        // Xử lý nút Xác nhận
+        // Xử lý nút xác nhận
         btnConfirm.setOnClickListener(v -> {
-            // Lấy danh sách các album đã được chọn
             List<AlbumEntity> selectedAlbums = adapter.getSelectedAlbums();
-
-            // Kiểm tra nếu có ít nhất một album được chọn
             if (!selectedAlbums.isEmpty()) {
-                // Lấy danh sách các ảnh đã chọn
                 List<PhotoEntity> selectedPhotos = allPhotos.stream()
                         .filter(PhotoEntity::isSelected)
                         .collect(Collectors.toList());
 
-                // Thêm các ảnh đã chọn vào từng album được chọn
                 for (AlbumEntity selectedAlbum : selectedAlbums) {
                     addPhotosToAlbum(selectedPhotos, selectedAlbum.getId());
                 }
-
-                // Đóng dialog
                 dialog.dismiss();
             } else {
                 Toast.makeText(this, "Vui lòng chọn ít nhất một album", Toast.LENGTH_SHORT).show();
             }
         });
 
+        // Hiển thị dialog
         dialog.show();
+
+        // Tùy chỉnh behavior để có thể kéo xuống mọi lúc
+        FrameLayout bottomSheet = dialog.findViewById(com.google.android.material.R.id.design_bottom_sheet);
+        if (bottomSheet != null) {
+            BottomSheetBehavior<FrameLayout> behavior = BottomSheetBehavior.from(bottomSheet);
+            behavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+            behavior.setSkipCollapsed(true);
+            behavior.setHideable(true);
+        }
     }
 
     private void addPhotosToAlbum(List<PhotoEntity> photos) {
