@@ -156,9 +156,19 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
         setResult(RESULT_OK, resultIntent);
 
         // Update UI
+        int removedPosition = photoIds.indexOf(photo.getId());
+        Log.d("Delete photo Id", "ID: "+ photo.getId());
         photoIds.remove(Integer.valueOf(photo.getId()));
         photoPagerAdapter.notifyDataSetChanged();
 
+        // Update current photo
+        if (!photoIds.isEmpty()) {
+            Log.d("Removed Position", "ID: "+ removedPosition);
+            // Fix: Don't increment the position, just use the removedPosition if it's valid
+            currentPosition = Math.min(removedPosition, photoIds.size() - 1);
+            Log.d("Current Position", "ID: "+ currentPosition);
+            loadCurrentPhoto(); // Refresh the current photo
+        }
         Toast.makeText(this, "Đã chuyển ảnh vào thùng rác", Toast.LENGTH_SHORT).show();
 
         // Close the activity if no photos are left
@@ -247,7 +257,9 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
                         showManageStorageDialog();
                         return true;
                     }
+                    Log.d("Delete action", "Deleting photo: ");
                     showDeleteConfirmationDialog(currentPhoto);
+                    return true;
                 }
                 return true;
             } else if (item.getItemId() == R.id.action_restore) {
@@ -300,8 +312,18 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
                                         Toast.makeText(this, "Đã khôi phục ảnh", Toast.LENGTH_SHORT).show();
 
                                         // Update UI
+                                        int removedPosition = photoIds.indexOf(photo.getId());
                                         photoIds.remove(Integer.valueOf(photo.getId()));
                                         photoPagerAdapter.notifyDataSetChanged();
+
+                                        // Update current photo
+                                        if (!photoIds.isEmpty()) {
+                                            if (removedPosition >= photoIds.size()) {
+                                                currentPosition = photoIds.size() - 1;
+                                            }
+                                            loadCurrentPhoto(); // Refresh the current photo
+                                        }
+
 
                                         if (photoIds.isEmpty()) {
                                             finish();
@@ -324,7 +346,17 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
                     Toast.makeText(this, "Đã xóa ảnh vĩnh viễn", Toast.LENGTH_SHORT).show();
 
                     // Update UI
+                    int removedPosition = photoIds.indexOf(photo.getId());
+                    photoIds.remove(Integer.valueOf(photo.getId()));
                     photoPagerAdapter.notifyDataSetChanged();
+
+                    // Update current photo
+                    if (!photoIds.isEmpty()) {
+                        if (removedPosition >= photoIds.size()) {
+                            currentPosition = photoIds.size() - 1;
+                        }
+                        loadCurrentPhoto(); // Refresh the current photo
+                    }
 
                     if (photoIds.isEmpty()) {
                         finish();

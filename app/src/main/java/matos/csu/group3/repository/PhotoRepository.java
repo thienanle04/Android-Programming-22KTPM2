@@ -434,17 +434,11 @@ public class PhotoRepository {
     }
 
     public void schedulePermanentDeletion(List<PhotoEntity> photos, Context context) {
-        int[] photoIds = new int[photos.size()];
-        for (int i = 0; i < photos.size(); i++) {
-            photoIds[i] = photos.get(i).getId();
-        }
-
-        Data inputData = new Data.Builder()
-                .putIntArray("photo_ids", photoIds)
-                .build();
-
-        // Create a unique tag for each photo's deletion work
         for (PhotoEntity photo : photos) {
+            Data inputData = new Data.Builder()
+                    .putInt("photo_id", photo.getId())
+                    .build();
+
             String workTag = "delete_photo_" + photo.getId();
 
             OneTimeWorkRequest deleteWorkRequest = new OneTimeWorkRequest.Builder(DeletePhotosWorker.class)
@@ -465,7 +459,13 @@ public class PhotoRepository {
         // Create unique tags for each photo's deletion work
         for (PhotoEntity photo : photos) {
             String workTag = "delete_photo_" + photo.getId();
+            // Cancel all work with this tag
             workManager.cancelAllWorkByTag(workTag);
+
+            // Cancel by unique work name
+            String workName = "delete_photo_" + photo.getId();
+            workManager.cancelUniqueWork(workName);
+
             Log.d("WorkCancellation", "Cancelled work for photo: " + photo.getId());
         }
     }
@@ -474,7 +474,7 @@ public class PhotoRepository {
         executor.execute(() -> {
             try {
                 for (PhotoEntity photo : photos) {
-                    // 1. Cancel scheduled deletion for this specific photo
+                    // 1. Cancel scheduled deletion FIRST
                     cancelScheduledDeletion(Collections.singletonList(photo), context);
 
                     // 2. Remove from Trash album

@@ -19,19 +19,15 @@ public class DeletePhotosWorker extends Worker {
     @NonNull
     @Override
     public Result doWork() {
-        // Retrieve photo IDs from input data
-        int[] photoIds = getInputData().getIntArray("photo_ids");
-        if (photoIds == null || photoIds.length == 0) {
+        int photoId = getInputData().getInt("photo_id", -1);
+        if (photoId == -1) {
             return Result.failure();
         }
 
-        // Delete photos from the database
         PhotoRepository photoRepository = new PhotoRepository((Application) getApplicationContext());
-        for (int id : photoIds) {
-            photoRepository.deletePhotoById(id);
-        }
+        photoRepository.deletePhotoById(photoId);
 
-        Log.d("DeletePhotosWorker", "Permanently deleted photos from trash");
+        Log.d("DeletePhotosWorker", "Deleted photo ID: " + photoId);
         return Result.success();
     }
 }
