@@ -62,7 +62,6 @@ public class AlbumRepository {
                 String path = photo.getFilePath().toLowerCase();
                 String albumName = extractAlbumNameFromPath(path);
                 if (albumName != null) {
-                    Log.d("AlbumDebug", "Album: " + albumName);
                     albumPhotoMap.computeIfAbsent(albumName, k -> new ArrayList<>()).add(photo);
                 }
             }
@@ -78,7 +77,6 @@ public class AlbumRepository {
                     album = new AlbumEntity();
                     album.setName(albumName);
                     albumId = (int) albumDao.insert(album);
-                    Log.e("AlbumInsert", "Inserted album ID: " + albumId);
 
                     if (albumId == -1) {
                         album = albumDao.getAlbumByNameSync(albumName);
@@ -111,7 +109,6 @@ public class AlbumRepository {
                         PhotoAlbum photoAlbum = new PhotoAlbum(photoId, albumId);
                         try {
                             photoAlbumDao.insert(photoAlbum);
-                            Log.d("PhotoAlbumInsert", "Thêm ảnh ID " + photoId + " vào album ID " + albumId);
                         } catch (Exception e) {
                             Log.e("PhotoAlbumInsertError", "Lỗi khi chèn ảnh vào album: " + e.getMessage());
                         }
@@ -126,7 +123,6 @@ public class AlbumRepository {
                 favAlbum = new AlbumEntity();
                 favAlbum.setName(favouriteAlbumName);
                 long favAlbumId = albumDao.insert(favAlbum);
-                Log.d("FavouriteAlbum", "Tạo album Favourite ID: " + favAlbumId);
             } else {
                 Log.d("FavouriteAlbum", "Album Favourite đã tồn tại ID: " + favAlbum.getId());
             }
@@ -155,7 +151,6 @@ public class AlbumRepository {
                     PhotoAlbum photoAlbum = new PhotoAlbum(photoId, albumId);
                     try {
                         photoAlbumDao.insert(photoAlbum);
-                        Log.d("FavouriteAlbum", "Thêm ảnh ID " + photoId + " vào album Favourite ID " + albumId);
                     } catch (Exception e) {
                         Log.e("FavouriteAlbumError", "Lỗi khi thêm ảnh vào album Favourite: " + e.getMessage());
                     }

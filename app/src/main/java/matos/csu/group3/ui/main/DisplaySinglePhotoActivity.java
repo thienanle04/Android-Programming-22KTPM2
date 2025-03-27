@@ -146,32 +146,44 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
         List<PhotoEntity> photosToDelete = new ArrayList<>();
         photosToDelete.add(photo);
 
-        // Move photo to trash and schedule permanent deletion
+        // Di chuyển ảnh vào thùng rác
         photoRepository.movePhotosToTrash(photosToDelete);
         photoRepository.schedulePermanentDeletion(photosToDelete, this);
 
-        // Notify MainActivity of the deletion
+        // Thông báo cho MainActivity
         Intent resultIntent = new Intent();
         resultIntent.putExtra("deletedPhotoId", photo.getId());
         setResult(RESULT_OK, resultIntent);
 
-        // Update UI
+        // Xác định vị trí ảnh bị xóa
         int removedPosition = photoIds.indexOf(photo.getId());
-        Log.d("Delete photo Id", "ID: "+ photo.getId());
-        photoIds.remove(Integer.valueOf(photo.getId()));
-        photoPagerAdapter.notifyDataSetChanged();
-
-        // Update current photo
-        if (!photoIds.isEmpty()) {
-            Log.d("Removed Position", "ID: "+ removedPosition);
-            // Fix: Don't increment the position, just use the removedPosition if it's valid
-            currentPosition = Math.min(removedPosition, photoIds.size() - 1);
-            Log.d("Current Position", "ID: "+ currentPosition);
-            loadCurrentPhoto(); // Refresh the current photo
+        if (removedPosition == -1) {
+            Log.e("DisplaySinglePhoto", "Photo ID not found in photoIds: " + photo.getId());
+            return;
         }
+
+        // Xóa ảnh khỏi danh sách
+        photoIds.remove(removedPosition);
+        photoPagerAdapter.notifyItemRemoved(removedPosition); // Tối ưu hơn notifyDataSetChanged()
+
+        // Cập nhật vị trí hiện tại
+        if (!photoIds.isEmpty()) {
+            // Nếu xóa ảnh cuối cùng, chuyển đến ảnh trước đó
+            if (removedPosition >= photoIds.size()) {
+                currentPosition = photoIds.size() - 1;
+            }
+            // Nếu xóa ảnh đang xem, giữ nguyên vị trí (ViewPager tự động chuyển sang ảnh kế tiếp)
+            else {
+                currentPosition = removedPosition;
+            }
+
+            viewPager.setCurrentItem(currentPosition, false);
+            loadCurrentPhoto(); // Cập nhật thông tin ảnh mới
+        }
+
         Toast.makeText(this, "Đã chuyển ảnh vào thùng rác", Toast.LENGTH_SHORT).show();
 
-        // Close the activity if no photos are left
+        // Đóng Activity nếu không còn ảnh
         if (photoIds.isEmpty()) {
             Log.d("DisplaySinglePhoto", "No photos left, finishing activity");
             finish();
