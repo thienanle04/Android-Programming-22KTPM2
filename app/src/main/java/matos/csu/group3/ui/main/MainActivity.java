@@ -280,7 +280,7 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
         Intent intent = new Intent(this, DisplaySinglePhotoActivity.class);
         intent.putExtra("photoEntity", photo);
         intent.putExtra("currentPosition", allPhotos.indexOf(photo));
-        startActivityForResult(intent, REQUEST_CODE_DISPLAY_PHOTO);
+        startActivity(intent);
     }
     private void initializeViews() {
         topNavigationBar = findViewById(R.id.topNavigationBar);
@@ -737,16 +737,6 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
                                 new String[]{"image/jpeg"},
                                 (path, uri) -> Log.d("MainActivity", "Rescanned edited file: " + path)
                         );
-                    }
-                }
-            } else if (requestCode == REQUEST_CODE_DISPLAY_PHOTO) {
-                // Handle photo deletion result
-                if (data != null && data.hasExtra("deletedPhotoId")) {
-                    int deletedPhotoId = data.getIntExtra("deletedPhotoId", -1);
-                    if (deletedPhotoId != -1) {
-                        // Remove the deleted photo from the list and update the UI
-                        allPhotos.removeIf(photo -> photo.getId() == deletedPhotoId);
-                        photoAdapter.notifyDataSetChanged();
                     }
                 }
             }
