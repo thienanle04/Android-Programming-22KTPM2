@@ -22,6 +22,7 @@ ucrop = "2.2.10"
 recyclerview = "1.4.0"
 lifecycle = "2.6.2"
 workRuntimeKtx = "2.10.0"
+swiperefreshlayout = "1.1.0"
 
 [libraries]
 appauth = { module = "net.openid:appauth", version.ref = "appauth" }
@@ -49,7 +50,7 @@ ucrop = { module = "com.github.yalantis:ucrop", version.ref = "ucrop" }
 recyclerview = { group = "androidx.recyclerview", name = "recyclerview", version.ref = "recyclerview" }
 lifecycle-livedata-ktx = { group = "androidx.lifecycle", name = "lifecycle-livedata-ktx", version.ref = "lifecycle" }
 work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "workRuntimeKtx" }
-
+swiperefreshlayout = { module = "androidx.swiperefreshlayout:swiperefreshlayout", version.ref = "swiperefreshlayout" }
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 

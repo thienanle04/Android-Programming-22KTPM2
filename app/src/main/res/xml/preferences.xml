@@ -10,6 +10,11 @@
         app:title="Enable message notifications"/>
 
     <Preference
+        app:key="set_password"
+        app:title="Set Password"
+        app:summary="Set or change your application password" />
+
+    <Preference
         app:key="feedback"
         app:title="Send feedback"
         app:summary="Report technical issues or suggest new features"/>

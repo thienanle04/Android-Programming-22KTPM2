@@ -42,10 +42,9 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
 
     private ViewPager2 viewPager;
     private TextView txtSoloMsg;
-    private Menu menu;
-    private MenuItem favouriteItem;
     private BottomNavigationView bottomNavigationView;
     private ImageButton btnSoloBack;
+    private ImageButton btnToggleVisibility;
     private PhotoViewModel photoViewModel;
     private PhotoPagerAdapter photoPagerAdapter;
     private List<Integer> photoIds;
@@ -65,12 +64,12 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
         viewPager = findViewById(R.id.viewPager);
         txtSoloMsg = findViewById(R.id.txtSoloMsg);
         btnSoloBack = findViewById(R.id.btnSoloBack);
+        btnToggleVisibility = findViewById(R.id.btnToggleVisibility);
+
         bottomNavigationView = findViewById(R.id.bottomNavigationSinglePhotoView);
 
         photoRepository = new PhotoRepository(getApplication());
 
-        menu = bottomNavigationView.getMenu();
-        favouriteItem = menu.findItem(R.id.action_favorite);
         albumRepository = new AlbumRepository(getApplication());
 
         // Lấy dữ liệu từ Intent
@@ -81,7 +80,6 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
             currentPosition = intent.getIntExtra("currentPosition", 0);
             isTrashAlbum = intent.getBooleanExtra("isTrashAlbum", false);
             loadCurrentPhoto();
-
         }
 
         photoPagerAdapter = new PhotoPagerAdapter(photoIds, photoViewModel, this);
@@ -104,6 +102,18 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
 
         // Nút quay lại
         btnSoloBack.setOnClickListener(v -> finish());
+
+        btnToggleVisibility.setOnClickListener(v -> {
+            boolean isHidden = !currentPhoto.isHidden();
+            currentPhoto.setHidden(isHidden);
+            if(isHidden){
+                btnToggleVisibility.setImageResource(R.drawable.ic_eye_slash);
+            } else {
+                btnToggleVisibility.setImageResource(R.drawable.ic_eye);
+            }
+            photoViewModel.updateHiddenStatus(currentPhoto, isHidden);
+            finish();
+        });
     }
     private void loadCurrentPhoto() {
         if (isInvalidPosition()) return;
@@ -114,16 +124,30 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
                 currentPhoto = photo;
                 if (photo != null) {
                     updateCaption(photo);
-                    if (photo.isFavorite()) {
-                        favouriteItem.setIcon(R.drawable.ic_favorite_selected); // Icon khi được yêu thích
+                    updateFavoriteIcon(photo.isFavorite());
+                    if(currentPhoto.isHidden()){
+                        btnToggleVisibility.setImageResource(R.drawable.ic_eye_slash);
                     } else {
-                        favouriteItem.setIcon(R.drawable.ic_favorite); // Icon mặc định
+                        btnToggleVisibility.setImageResource(R.drawable.ic_eye);
                     }
                 }
             }
         });
     }
 
+    private void updateFavoriteIcon(boolean isFavorite) {
+        bottomNavigationView.post(() -> { // Đảm bảo chạy trên UI thread
+            MenuItem favoriteItem = bottomNavigationView.getMenu().findItem(R.id.action_favorite);
+            if (favoriteItem != null) {
+                favoriteItem.setIcon(isFavorite ?
+                        R.drawable.ic_favorite_selected :
+                        R.drawable.ic_favorite);
+
+                // Quan trọng: Yêu cầu BottomNavigationView vẽ lại
+                bottomNavigationView.getMenu().setGroupCheckable(0, true, true);
+            }
+        });
+    }
     private boolean isInvalidPosition() {
         return photoIds == null || photoIds.isEmpty() || currentPosition < 0 || currentPosition >= photoIds.size();
     }

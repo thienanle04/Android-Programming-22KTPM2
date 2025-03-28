@@ -1,6 +1,7 @@
 package matos.csu.group3.ui.fragment;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 
@@ -10,8 +11,13 @@ import androidx.preference.PreferenceFragmentCompat;
 
 import matos.csu.group3.R;
 import matos.csu.group3.service.GoogleSignInService;
+import matos.csu.group3.utils.PasswordHelper;
 
 import android.content.Intent;
+import android.text.InputType;
+import android.widget.EditText;
+import android.widget.Toast;
+
 import androidx.preference.Preference;
 import androidx.preference.PreferenceManager;
 
@@ -26,6 +32,13 @@ public class SettingsFragment extends PreferenceFragmentCompat {
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
         setPreferencesFromResource(R.xml.preferences, rootKey);
 
+        Preference setPasswordPref = findPreference("set_password");
+        if (setPasswordPref != null) {
+            setPasswordPref.setOnPreferenceClickListener(preference -> {
+                showSetPasswordDialog();
+                return true;
+            });
+        }
         googleSignInService = new GoogleSignInService(requireContext());
 
         Preference googleSignInPref = findPreference("google_sign_in");
@@ -71,5 +84,24 @@ public class SettingsFragment extends PreferenceFragmentCompat {
         if (googleSignInPref != null) {
             googleSignInPref.setSummary(isLoggedIn ? "Đã đăng nhập với " + findPreference("user_email"): "Chưa đăng nhập");
         }
+    }
+    private void showSetPasswordDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+        builder.setTitle("Thiết lập mật khẩu album ẩn");
+
+        final EditText input = new EditText(getContext());
+        input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        builder.setView(input);
+
+        builder.setPositiveButton("Lưu", (dialog, which) -> {
+            String password = input.getText().toString();
+            if (!password.isEmpty()) {
+                PasswordHelper.setPassword(getContext(), password);
+                Toast.makeText(getContext(), "Mật khẩu đã được thiết lập", Toast.LENGTH_SHORT).show();
+            }
+        });
+        builder.setNegativeButton("Hủy", (dialog, which) -> dialog.cancel());
+
+        builder.show();
     }
 }

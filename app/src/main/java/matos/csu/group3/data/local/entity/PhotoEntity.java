@@ -29,7 +29,7 @@ public class PhotoEntity implements Serializable{
     private boolean isUploaded;       // Whether the photo is uploaded to Google Drive
     private boolean isSynced;         // Whether the photo is fully synced
     private boolean isDeleted;        // Flag to mark the photo as deleted
-
+    private boolean isHidden;
     private boolean selected;
     // Getters and Setters
 
@@ -195,6 +195,14 @@ public class PhotoEntity implements Serializable{
 
     public void setDateTimestamp(long dateTimestamp) {
         this.dateTimestamp = dateTimestamp;
+    }
+
+    public boolean isHidden() {
+        return isHidden;
+    }
+
+    public void setHidden(boolean hidden) {
+        isHidden = hidden;
     }
 }
 

@@ -179,6 +179,9 @@ public class PhotoRepository {
     public LiveData<List<PhotoEntity>> getAllPhotos() {
         return photoDao.getAllNonDeletedPhotosSync();
     }
+    public LiveData<List<PhotoEntity>> getHiddenPhotos() {
+        return photoDao.getHiddenPhotos();
+    }
     public void addPhotosToAlbum(int albumId, List<PhotoEntity> photos) {
         executor.execute(() -> {
             for (PhotoEntity photo : photos) {
@@ -293,8 +296,7 @@ public class PhotoRepository {
         executor.execute(() -> {
             try {
                 // Cập nhật trạng thái yêu thích của ảnh trong cơ sở dữ liệu
-                photo.setFavorite(isFavorite);
-                photoDao.update(photo);
+                photoDao.updateFavoriteStatusDirectly(photo.getId(), isFavorite);
 
                 // Lấy hoặc tạo album "Favourite"
                 String favouriteAlbumName = "Favourite";
@@ -330,6 +332,15 @@ public class PhotoRepository {
         });
     }
 
+    public void updateIsHidden(PhotoEntity photo, boolean isHidden) {
+        executor.execute(() -> {
+            try {
+                photoDao.updateHiddenStatusDirectly(photo.getId(), isHidden);
+            } catch (Exception e) {
+                Log.e("HiddenUpdateError", "Lỗi khi cập nhật trạng thái: " + e.getMessage());
+            }
+        });
+    }
     public void deleteFileUsingMediaStore(Context context, String filePath) {
         File file = new File(filePath);
         if (!file.exists()) {
