@@ -46,4 +46,10 @@ public class PhotoViewModel extends AndroidViewModel {
     public void updateFavoriteStatus(PhotoEntity photo, boolean isFavorite) {
         repository.updateFavoriteStatus(photo, isFavorite);
     }
+    public void updateHiddenStatus(PhotoEntity photo, boolean isHidden ) {
+        repository.updateIsHidden(photo, isHidden);
+    }
+    public LiveData<List<PhotoEntity>> getHiddenPhotos() {
+        return repository.getHiddenPhotos();
+    }
 }

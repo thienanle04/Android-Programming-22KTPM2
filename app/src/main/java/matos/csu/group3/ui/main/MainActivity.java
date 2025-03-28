@@ -1,5 +1,6 @@
 package matos.csu.group3.ui.main;
 
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.AlarmManager;
 import android.content.Context;
@@ -40,6 +41,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -86,6 +88,8 @@ import matos.csu.group3.repository.PhotoRepository;
 import matos.csu.group3.ui.adapter.AlbumAdapter;
 import matos.csu.group3.ui.adapter.PhotoAdapter;
 import matos.csu.group3.ui.editor.CropAndRotateActivity;
+import matos.csu.group3.ui.fragment.HiddenAlbumBottomSheet;
+import matos.csu.group3.utils.PasswordHelper;
 import matos.csu.group3.utils.PhotoCache;
 import matos.csu.group3.viewmodel.AlbumViewModel;
 import matos.csu.group3.ui.fragment.BottomExtendedMenu;
@@ -282,6 +286,7 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
         intent.putExtra("currentPosition", allPhotos.indexOf(photo));
         startActivity(intent);
     }
+    @SuppressLint("ClickableViewAccessibility")
     private void initializeViews() {
         topNavigationBar = findViewById(R.id.topNavigationBar);
         customSearchView = findViewById(R.id.customSearchView);
@@ -374,6 +379,41 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
         });
         // Khởi tạo RecyclerView
         photoRecyclerView = findViewById(R.id.photoRecyclerView);
+        photoRecyclerView.setOnTouchListener(new View.OnTouchListener() {
+            private float startY;
+
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (bottomNavigationView.getSelectedItemId() != R.id.nav_albums) {
+                    return false; // Chỉ kích hoạt khi ở tab Album
+                }
+
+                // Khoảng cách tối thiểu để kích hoạt
+                float MIN_DISTANCE = 100;
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_DOWN:
+                        startY = event.getY();
+                        return true;
+                    case MotionEvent.ACTION_UP:
+                        // Call performClick for accessibility
+                        v.performClick();
+
+                        float endY = event.getY();
+                        float distance = endY - startY;
+
+                        // Kiểm tra kéo từ trên xuống đủ xa và ở đầu RecyclerView
+                        if (distance > MIN_DISTANCE && !photoRecyclerView.canScrollVertically(-1)) {
+                            showHiddenAlbumBottomSheet();
+                            return true;
+                        }
+                        break;
+                }
+                return false;
+            }
+        });
+
+        // This is required for accessibility
+        photoRecyclerView.setClickable(true);
 
         // Khởi tạo adapter với danh sách ảnh rỗng ban đầu
         photosByDate = new LinkedHashMap<>();
@@ -511,7 +551,15 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
             }
         });
     }
-
+    private void showHiddenAlbumBottomSheet() {
+        HiddenAlbumBottomSheet bottomSheet = new HiddenAlbumBottomSheet();
+        bottomSheet.setOnHiddenAlbumUnlockedListener(() -> {
+            // Mở activity album ẩn
+            Intent intent = new Intent(this, HiddenAlbumActivity.class);
+            startActivity(intent);
+        });
+        bottomSheet.show(getSupportFragmentManager(), bottomSheet.getTag());
+    }
     //Handle delete function
     //Permission required message
     private void showManageStorageDialog() {
