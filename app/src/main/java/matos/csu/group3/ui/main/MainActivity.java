@@ -1,5 +1,6 @@
 package matos.csu.group3.ui.main;
 
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.app.AlarmManager;
 import android.content.Context;
@@ -28,14 +29,25 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.work.Data;
+import androidx.work.OneTimeWorkRequest;
+import androidx.work.WorkManager;
 
+import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
+import android.provider.Settings;
+import android.text.InputType;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -44,32 +56,42 @@ import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.bottomsheet.BottomSheetBehavior;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.navigation.NavigationBarView;
 import com.yalantis.ucrop.UCrop;
 
 import java.io.File;
+import java.io.Serializable;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
 import java.util.Date;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import matos.csu.group3.R;
 import matos.csu.group3.data.local.entity.AlbumEntity;
 import matos.csu.group3.data.local.entity.HeaderItem;
 import matos.csu.group3.data.local.entity.ListItem;
+import matos.csu.group3.data.local.entity.PhotoAlbum;
 import matos.csu.group3.data.local.entity.PhotoEntity;
 import matos.csu.group3.data.local.entity.PhotoItem;
+import matos.csu.group3.notification.DeletePhotosWorker;
 import matos.csu.group3.repository.PhotoRepository;
 import matos.csu.group3.ui.adapter.AlbumAdapter;
 import matos.csu.group3.ui.adapter.PhotoAdapter;
 import matos.csu.group3.ui.editor.CropAndRotateActivity;
+import matos.csu.group3.ui.fragment.HiddenAlbumBottomSheet;
+import matos.csu.group3.utils.PasswordHelper;
+import matos.csu.group3.utils.PhotoCache;
 import matos.csu.group3.viewmodel.AlbumViewModel;
 import matos.csu.group3.ui.fragment.BottomExtendedMenu;
 import matos.csu.group3.viewmodel.PhotoViewModel;
@@ -94,6 +116,8 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
     private TextView tvSelectedCount;
     private ImageButton btnSelectAll;
     private ConstraintLayout constraintLayout;
+    private static final int REQUEST_CODE_DISPLAY_PHOTO = 1001; // Unique request code
+    private static final int REQUEST_CODE_PHOTO_LIST = 1002;
 
 
     // Register the permission request launcher
@@ -117,14 +141,18 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
         setContentView(R.layout.activity_main);
         constraintLayout = findViewById(R.id.activity_main);
         bottomNavigationView = findViewById(R.id.bottomNavigationView);
+        resetBottomNavSelection(bottomNavigationView);
         bottomNavigationSelectionView = findViewById(R.id.bottomNavigationSelectionView);
+        resetBottomNavSelection(bottomNavigationSelectionView);
         photoRepository = new PhotoRepository(getApplication());
+        photoViewModel = new ViewModelProvider(this).get(PhotoViewModel.class);
+        albumViewModel = new ViewModelProvider(this).get(AlbumViewModel.class);
+
         // Initialize notification channel
         NotificationHelper.createNotificationChannel(this);
 
         initializeViews();
         handleIntent(getIntent());
-
 
         // Check for permissions
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -159,9 +187,26 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
     @Override
     public void onItemClick(AlbumEntity album) {
         // Handle item click events here
-        Intent intent = new Intent(this, PhotoListOfAlbumActivity.class);
-        intent.putExtra("ALBUM_ID", album.getId());  // Pass the album ID
-        startActivity(intent);
+//        Intent intent = new Intent(this, PhotoListOfAlbumActivity.class);
+//        intent.putExtra("ALBUM_ID", album.getId());  // Pass the album ID
+//        startActivityForResult(intent, REQUEST_CODE_PHOTO_LIST);
+        if (album.isLocked()) {
+            // Hiển thị dialog yêu cầu mật khẩu
+            showPasswordDialog(album);
+        } else {
+            // Mở bình thường nếu không khóa
+            openAlbum(album);
+        }
+    }
+    private void resetBottomNavSelection(BottomNavigationView bottomNavView) {
+        bottomNavView.getMenu().setGroupCheckable(0, true, false);
+        // Bỏ chọn tất cả item ban đầu
+        for (int i = 0; i < bottomNavView.getMenu().size(); i++) {
+            bottomNavView.getMenu().getItem(i).setChecked(false);
+        }
+
+        // Bật lại chế độ chỉ cho chọn 1 item
+        bottomNavView.getMenu().setGroupCheckable(0, true, true);
     }
 
     // Method to filter photos based on search query
@@ -241,11 +286,16 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
     }
 
     private void showBigScreen(PhotoEntity photo) {
+        // Cache the photo list
+        PhotoCache.getInstance().setPhotoList(allPhotos);
+
+        // Start DisplaySinglePhotoActivity for result
         Intent intent = new Intent(this, DisplaySinglePhotoActivity.class);
         intent.putExtra("photoEntity", photo);
+        intent.putExtra("currentPosition", allPhotos.indexOf(photo));
         startActivity(intent);
     }
-
+    @SuppressLint("ClickableViewAccessibility")
     private void initializeViews() {
         topNavigationBar = findViewById(R.id.topNavigationBar);
         customSearchView = findViewById(R.id.customSearchView);
@@ -281,11 +331,98 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
                     Toast.makeText(this, "Vui lòng chọn ít nhất một ảnh để chia sẻ", Toast.LENGTH_SHORT).show();
                 }
                 return true;
+            } else if (item.getItemId() == R.id.action_add_fav){
+                List<PhotoEntity> selectedPhotos = allPhotos.stream()
+                        .filter(PhotoEntity::isSelected)
+                        .collect(Collectors.toList());
+                if (!selectedPhotos.isEmpty()) {
+                    photoViewModel.addPhotosToFavourite(selectedPhotos);
+                    Toast.makeText(this, "Đã thêm " + selectedPhotos.size() + " ảnh vào yêu thích", Toast.LENGTH_SHORT).show();
+                    // Cập nhật RecyclerView hoặc giao diện khác nếu cần
+                    loadAlbums(); // Ví dụ: Tải lại danh sách album
+                } else {
+                    Toast.makeText(this, "Không có ảnh nào được chọn", Toast.LENGTH_SHORT).show();
+                }
+                return true;
+            } else if (item.getItemId() == R.id.action_delete) {
+                // Handle delete action
+                List<PhotoEntity> selectedPhotos = allPhotos.stream()
+                        .filter(PhotoEntity::isSelected)
+                        .collect(Collectors.toList());
+
+                if (!selectedPhotos.isEmpty()) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !Environment.isExternalStorageManager()) {
+                        showManageStorageDialog();
+                        return true;
+                    }
+
+                    // Show delete confirmation dialog
+                    new AlertDialog.Builder(this)
+                            .setTitle("Xác nhận xóa")
+                            .setMessage("Bạn có chắc chắn muốn xóa các ảnh đã chọn không?")
+                            .setPositiveButton("Xóa", (dialog, which) -> {
+                                // Move the selected photos to the Trash album
+                                photoRepository.movePhotosToTrash(selectedPhotos);
+                                //Delete photo after a schedule times
+                                photoRepository.schedulePermanentDeletion(selectedPhotos, this);
+
+
+                                // Reset selection state
+                                selectedPhotos.forEach(photo -> photo.setSelected(false));
+
+                                // Update UI
+                                photoAdapter.notifyDataSetChanged();
+
+                                // Show a success message
+                                Toast.makeText(this, "Đã chuyển ảnh vào thùng rác", Toast.LENGTH_SHORT).show();
+                            })
+                            .setNegativeButton("Hủy", (dialog, which) -> dialog.dismiss())
+                            .setIcon(android.R.drawable.ic_dialog_alert)
+                            .show();
+                } else {
+                    Toast.makeText(this, "Không có ảnh nào được chọn", Toast.LENGTH_SHORT).show();
+                }
+                return true;
             }
             return false;
         });
         // Khởi tạo RecyclerView
         photoRecyclerView = findViewById(R.id.photoRecyclerView);
+        photoRecyclerView.setOnTouchListener(new View.OnTouchListener() {
+            private float startY;
+
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (bottomNavigationView.getSelectedItemId() != R.id.nav_albums) {
+                    return false; // Chỉ kích hoạt khi ở tab Album
+                }
+
+                // Khoảng cách tối thiểu để kích hoạt
+                float MIN_DISTANCE = 100;
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_DOWN:
+                        startY = event.getY();
+                        return true;
+                    case MotionEvent.ACTION_UP:
+                        // Call performClick for accessibility
+                        v.performClick();
+
+                        float endY = event.getY();
+                        float distance = endY - startY;
+
+                        // Kiểm tra kéo từ trên xuống đủ xa và ở đầu RecyclerView
+                        if (distance > MIN_DISTANCE && !photoRecyclerView.canScrollVertically(-1)) {
+                            showHiddenAlbumBottomSheet();
+                            return true;
+                        }
+                        break;
+                }
+                return false;
+            }
+        });
+
+        // This is required for accessibility
+        photoRecyclerView.setClickable(true);
 
         // Khởi tạo adapter với danh sách ảnh rỗng ban đầu
         photosByDate = new LinkedHashMap<>();
@@ -317,7 +454,7 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
         });
         photoAdapter.setOnSelectionChangeListener(this::updateSelectedCount);
         // Khởi tạo adapter cho album
-        albumAdapter = new AlbumAdapter(new ArrayList<>(), this);
+        albumAdapter = new AlbumAdapter(new ArrayList<>(), this, albumViewModel, this);
 
         // Kiểm tra hướng màn hình
         int orientation = getResources().getConfiguration().orientation;
@@ -347,14 +484,12 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
         photoRecyclerView.setAdapter(photoAdapter);
 
         // Khởi tạo ViewModel và quan sát dữ liệu
-        photoViewModel = new ViewModelProvider(this).get(PhotoViewModel.class);
         photoViewModel.getAllPhotos().observe(this, new Observer<List<PhotoEntity>>() {
             @Override
             public void onChanged(List<PhotoEntity> photoEntities) {
                 if (photoEntities != null && !photoEntities.isEmpty()) {
                     // Cập nhật danh sách ảnh
                     allPhotos = photoEntities;
-
                     // Nhóm ảnh theo ngày
                     photosByDate = groupPhotosByDate(photoEntities);
                     groupedList = convertToGroupedList(photosByDate);
@@ -369,7 +504,6 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
         });
 
         // Khởi tạo ViewModel cho album
-        albumViewModel = new ViewModelProvider(this).get(AlbumViewModel.class);
         albumViewModel.getAllAlbums().observe(this, new Observer<List<AlbumEntity>>() {
             @Override
             public void onChanged(List<AlbumEntity> albumEntities) {
@@ -419,78 +553,128 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
             }
         });
     }
-
-    private void showAlbumSelectionDialog() {
+    private void openAlbum(AlbumEntity album) {
+        Intent intent = new Intent(this, PhotoListOfAlbumActivity.class);
+        intent.putExtra("ALBUM_ID", album.getId());
+        startActivityForResult(intent, REQUEST_CODE_PHOTO_LIST);
+    }
+    private void showPasswordDialog(AlbumEntity album) {
         // Tạo dialog
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Nhập mật khẩu");
+        builder.setMessage("Album này đã được khóa. Vui lòng nhập mật khẩu để tiếp tục.");
+
+        // Thêm input mật khẩu
+        final EditText input = new EditText(this);
+        input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        builder.setView(input);
+
+        // Nút xác nhận
+        builder.setPositiveButton("OK", (dialog, which) -> {
+            String password = input.getText().toString();
+            if(PasswordHelper.checkLockPassword(this, password)){
+                openAlbum(album);
+            }
+            else{
+                Toast.makeText(this, "Mật khẩu không đúng", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        // Nút hủy
+        builder.setNegativeButton("Hủy", (dialog, which) -> dialog.cancel());
+
+        builder.show();
+    }
+    private void showHiddenAlbumBottomSheet() {
+        HiddenAlbumBottomSheet bottomSheet = new HiddenAlbumBottomSheet();
+        bottomSheet.setOnHiddenAlbumUnlockedListener(() -> {
+            // Mở activity album ẩn
+            Intent intent = new Intent(this, HiddenAlbumActivity.class);
+            startActivity(intent);
+        });
+        bottomSheet.show(getSupportFragmentManager(), bottomSheet.getTag());
+    }
+    //Handle delete function
+    //Permission required message
+    private void showManageStorageDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Cần cấp quyền truy cập ")
+                .setMessage("Ứng dụng cần được cấp quyền truy cập quản lí tất cả các file, vui lòng cấp quyền truy cập trong settings.")
+                .setPositiveButton("Đồng ý", (dialog, which) -> {
+                    Intent intent = new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
+                    startActivity(intent);
+                })
+                .setNegativeButton("Hủy", (dialog, which) -> {
+                    Toast.makeText(this, "Không được cấp quyền truy cập, một vài tính năng có thể không hoạt động.", Toast.LENGTH_SHORT).show();
+                })
+                .setCancelable(false)
+                .show();
+    }
+    private void showAlbumSelectionDialog() {
+        // Tạo BottomSheetDialog
+        BottomSheetDialog dialog = new BottomSheetDialog(this);
         View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_select_album, null);
-        builder.setView(dialogView);
+        dialog.setContentView(dialogView);
+
+        // Thiết lập chiều cao tối đa cho dialog
+        if (dialog.getWindow() != null) {
+            dialog.getWindow().setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+        }
 
         // Ánh xạ view
         RecyclerView dialogRecyclerView = dialogView.findViewById(R.id.albumRecyclerView);
         Button btnConfirm = dialogView.findViewById(R.id.btnConfirm);
+        ImageButton btnClose = dialogView.findViewById(R.id.btnClose);
 
-        // Thiết lập RecyclerView
-        dialogRecyclerView.setLayoutManager(new LinearLayoutManager(this));
-        AlbumAdapter adapter = new AlbumAdapter(new ArrayList<>(), new AlbumAdapter.OnItemClickListener() {
-            @Override
-            public void onItemClick(AlbumEntity album) {
-                // Xử lý sự kiện click
+        // Thiết lập GridLayoutManager với 3 cột
+        GridLayoutManager gridLayoutManager = new GridLayoutManager(this, 3);
+        dialogRecyclerView.setLayoutManager(gridLayoutManager);
 
-            }
-        });
+        // Khởi tạo adapter
+        AlbumAdapter adapter = new AlbumAdapter(new ArrayList<>(), album -> {
+            // Xử lý sự kiện click item
+        }, albumViewModel, this);
 
-        // Lấy danh sách các album từ repository
+        // Lấy dữ liệu album
         AlbumViewModel albumViewModel = new ViewModelProvider(this).get(AlbumViewModel.class);
-        albumViewModel.getAllAlbums().observe(this, new Observer<List<AlbumEntity>>() {
-            @Override
-            public void onChanged(List<AlbumEntity> albumEntities) {
-                // Cập nhật danh sách album đã lọc vào adapter
-                adapter.updateData(albumEntities);
-            }
+        albumViewModel.getAllAlbums().observe(this, albumEntities -> {
+            adapter.updateData(albumEntities);
         });
+
         adapter.setSelectionMode(true);
         dialogRecyclerView.setAdapter(adapter);
 
-        AlertDialog dialog = builder.create();
+        // Xử lý nút đóng
+        btnClose.setOnClickListener(v -> dialog.dismiss());
 
-        // Xử lý nút Xác nhận
+        // Xử lý nút xác nhận
         btnConfirm.setOnClickListener(v -> {
-            // Lấy danh sách các album đã được chọn
             List<AlbumEntity> selectedAlbums = adapter.getSelectedAlbums();
-
-            // Kiểm tra nếu có ít nhất một album được chọn
             if (!selectedAlbums.isEmpty()) {
-                // Lấy danh sách các ảnh đã chọn
                 List<PhotoEntity> selectedPhotos = allPhotos.stream()
                         .filter(PhotoEntity::isSelected)
                         .collect(Collectors.toList());
 
-                // Đặt lại trạng thái isSelected = false cho tất cả ảnh trong allPhotos
-                for (PhotoEntity photo : allPhotos) {
-                    photo.setSelected(false);
-                }
-
-                // Thêm các ảnh đã chọn vào từng album được chọn
                 for (AlbumEntity selectedAlbum : selectedAlbums) {
                     addPhotosToAlbum(selectedPhotos, selectedAlbum.getId());
                 }
-
-                // Đóng dialog
-                Toast.makeText(this, "Đã thêm ảnh vào album", Toast.LENGTH_SHORT).show();
                 dialog.dismiss();
             } else {
                 Toast.makeText(this, "Vui lòng chọn ít nhất một album", Toast.LENGTH_SHORT).show();
             }
-            photoAdapter.setSelectionMode(false); // Tắt chế độ chọn ảnh
-            topNavigationBar.setVisibility(View.GONE); // Ẩn top navigation bar
-            customSearchView.setVisibility(View.VISIBLE);
-            bottomNavigationSelectionView.setVisibility(View.GONE);
-            bottomNavigationView.setVisibility(View.VISIBLE);
-            updateRecyclerViewConstraints(true);
         });
 
+        // Hiển thị dialog
         dialog.show();
+
+        // Tùy chỉnh behavior để có thể kéo xuống mọi lúc
+        FrameLayout bottomSheet = dialog.findViewById(com.google.android.material.R.id.design_bottom_sheet);
+        if (bottomSheet != null) {
+            BottomSheetBehavior<FrameLayout> behavior = BottomSheetBehavior.from(bottomSheet);
+            behavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+            behavior.setSkipCollapsed(true);
+            behavior.setHideable(true);
+        }
     }
     private void addPhotosToAlbum(List<PhotoEntity> photos, int albumID){
         photoRepository.addPhotosToAlbum(albumID, photos);
@@ -619,6 +803,7 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
 
         if (resultCode == RESULT_OK) {
             if (requestCode == UCrop.REQUEST_CROP) {
+                // Handle photo editing result
                 if (data != null && data.hasExtra("photoEntity")) {
                     PhotoEntity updatedPhoto = (PhotoEntity) data.getSerializableExtra("photoEntity");
 
@@ -636,6 +821,11 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
                         );
                     }
                 }
+            }
+            else if (requestCode == REQUEST_CODE_PHOTO_LIST) {
+                int albumId = data.getIntExtra("ALBUM_ID", -1);
+                boolean isLocked = data.getBooleanExtra("IS_LOCKED", false);
+                albumAdapter.updateAlbumLockStatus(albumId, isLocked);
             }
         }
     }
@@ -684,6 +874,12 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
                     R.id.customSearchView,
                     ConstraintSet.BOTTOM
             );
+            constraintSet.connect(
+                    R.id.photoRecyclerView,
+                    ConstraintSet.BOTTOM,
+                    R.id.bottomNavigationView,
+                    ConstraintSet.TOP
+            );
         } else {
             // Ràng buộc với topNavigationBar
             constraintSet.connect(
@@ -691,6 +887,12 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
                     ConstraintSet.TOP,
                     R.id.topNavigationBar,
                     ConstraintSet.BOTTOM
+            );
+            constraintSet.connect(
+                    R.id.photoRecyclerView,
+                    ConstraintSet.BOTTOM,
+                    R.id.bottomNavigationSelectionView,
+                    ConstraintSet.TOP
             );
         }
 

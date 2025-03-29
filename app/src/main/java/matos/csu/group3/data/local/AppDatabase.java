@@ -15,7 +15,7 @@ import matos.csu.group3.data.local.entity.PhotoAlbum;
 import matos.csu.group3.data.local.entity.PhotoEntity;
 import matos.csu.group3.data.local.entity.AlbumEntity;  // Import AlbumEntity
 
-@Database(entities = {PhotoEntity.class, AlbumEntity.class, PhotoAlbum.class}, version = 2, exportSchema = false)  // Thêm AlbumEntity vào danh sách entities
+@Database(entities = {PhotoEntity.class, AlbumEntity.class, PhotoAlbum.class}, version = 4, exportSchema = false)  // Thêm AlbumEntity vào danh sách entities
 @TypeConverters({HashtagsConverter.class})
 public abstract class AppDatabase extends RoomDatabase {
     private static volatile AppDatabase INSTANCE;

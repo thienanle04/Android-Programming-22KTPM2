@@ -4,6 +4,9 @@ import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 import java.io.Serializable;
 import java.util.List;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Locale;
 import java.util.Objects;
 
 @Entity(tableName = "photos")
@@ -16,6 +19,7 @@ public class PhotoEntity implements Serializable{
     private String filePath;          // File path to the photo
     private String name;              // Name of the photo (e.g., image name)
     private String dateTaken;         // Date the photo was taken
+    private long dateTimestamp;
     private String location;          // Location where the photo was taken
     private int albumId;              // ID of the album to which the photo belongs
     private boolean isFavorite;       // Flag to mark the photo as a favorite
@@ -26,7 +30,8 @@ public class PhotoEntity implements Serializable{
     private Hashtags hashtags;
     private boolean isUploaded;       // Whether the photo is uploaded to Google Drive
     private boolean isSynced;         // Whether the photo is fully synced
-
+    private boolean isDeleted;        // Flag to mark the photo as deleted
+    private boolean isHidden;
     private boolean selected;
     // Getters and Setters
 
@@ -64,6 +69,15 @@ public class PhotoEntity implements Serializable{
 
     public void setDateTaken(String dateTaken) {
         this.dateTaken = dateTaken;
+        this.dateTimestamp = convertDateToTimestamp(dateTaken);
+    }
+    private long convertDateToTimestamp(String date) {
+        SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy", Locale.getDefault());
+        try {
+            return sdf.parse(date).getTime();
+        } catch (ParseException e) {
+            return 0; // Hoặc xử lý lỗi phù hợp
+        }
     }
 
     // Getter and Setter for location
@@ -151,6 +165,15 @@ public class PhotoEntity implements Serializable{
         isSynced = synced;
     }
 
+    // Getter and Setter for isFavorite
+    public boolean isDeleted() {
+        return isDeleted;
+    }
+
+    public void setDeleted(boolean deleted) {
+        isDeleted = deleted;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -170,6 +193,22 @@ public class PhotoEntity implements Serializable{
 
     public void setSelected(boolean isChecked) {
         this.selected = isChecked;
+    }
+
+    public long getDateTimestamp() {
+        return dateTimestamp;
+    }
+
+    public void setDateTimestamp(long dateTimestamp) {
+        this.dateTimestamp = dateTimestamp;
+    }
+
+    public boolean isHidden() {
+        return isHidden;
+    }
+
+    public void setHidden(boolean hidden) {
+        isHidden = hidden;
     }
 }
 

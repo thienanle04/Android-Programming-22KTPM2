@@ -8,12 +8,15 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 import java.util.List;
 import matos.csu.group3.data.local.entity.AlbumEntity;
+import matos.csu.group3.data.local.entity.PhotoAlbum;
+import matos.csu.group3.data.local.entity.PhotoEntity;
 import matos.csu.group3.repository.AlbumRepository;
 
 public class AlbumViewModel extends AndroidViewModel {
 
     private final AlbumRepository albumRepository;
     private final MutableLiveData<List<AlbumEntity>> allAlbums;
+    private final MutableLiveData<PhotoEntity> firstPhoto = new MutableLiveData<>();
 
     public AlbumViewModel(@NonNull Application application) {
         super(application);
@@ -35,8 +38,22 @@ public class AlbumViewModel extends AndroidViewModel {
     public void update(AlbumEntity album) {
         albumRepository.update(album);
     }
-
     public void delete(int albumId) {
         albumRepository.delete(albumId);
+    }
+    public LiveData<PhotoEntity> getFirstPhotoOfAlbum(int albumId) {
+        albumRepository.getFirstPhotoOfAlbum(albumId).observeForever(photoEntity -> {
+            firstPhoto.postValue(photoEntity);
+        });
+        return firstPhoto;
+    }
+    public LiveData<List<PhotoAlbum>> getPhotosByAlbumId(int albumId){
+        return albumRepository.getPhotosByAlbumId(albumId);
+    }
+    public LiveData<List<PhotoAlbum>> getNonDeletedPhotosByAlbumId(int albumId){
+        return albumRepository.getNonDeletedPhotosByAlbumId(albumId);
+    }
+    public void toggleAlbumLock(int albumId, boolean isLocked) {
+        albumRepository.toggleAlbumLock(albumId, isLocked);
     }
 }

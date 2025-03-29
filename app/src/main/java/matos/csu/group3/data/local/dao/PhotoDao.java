@@ -32,23 +32,59 @@ public interface PhotoDao {
     @Delete
     void delete(PhotoEntity photoEntity);
 
-    // Get all photos
-    @Query("SELECT * FROM photos ORDER BY id DESC")
+    // Get all non-hidden photos
+    @Query("SELECT * FROM photos WHERE isHidden != 1 ORDER BY id DESC")
     LiveData<List<PhotoEntity>> getAllPhotos();
 
-    // Get a photo by ID
+    // Get a non-hidden photo by ID
     @Query("SELECT * FROM photos WHERE id = :id")
-    PhotoEntity getPhotoById(int id);
+    LiveData<PhotoEntity> getPhotoById(int id);
+
     @Query("SELECT * FROM photos WHERE filePath = :filePath LIMIT 1")
     PhotoEntity getPhotoByFilePath(String filePath);
-    // Lấy danh sách ảnh thuộc một album cụ thể
-    @Query("SELECT * FROM photos WHERE id IN (SELECT photoId FROM photo_album WHERE albumId = :albumId)")
+
+    // Get non-hidden photos belonging to a specific album
+    @Query("SELECT * FROM photos WHERE id IN (SELECT photoId FROM photo_album WHERE albumId = :albumId) " +
+            "AND isHidden != 1 ORDER BY dateTimestamp DESC")
     LiveData<List<PhotoEntity>> getPhotosByAlbumId(int albumId);
 
-    // Lấy danh sách ảnh không thuộc album cụ thể
-    @Query("SELECT * FROM photos WHERE id NOT IN (SELECT photoId FROM photo_album WHERE albumId = :currentAlbumId)")
-    List<PhotoEntity> getPhotosNotInAlbum(int currentAlbumId);
-    @Query("SELECT * FROM photos ORDER BY id DESC")
-    List<PhotoEntity> getAllPhotosSync();
-}
+    @Query("SELECT p.* FROM photos p " +
+            "INNER JOIN photo_album pa ON p.id = pa.photoId " +
+            "WHERE pa.albumId = :albumId AND p.isDeleted != 1 AND p.isHidden != 1 " +
+            "ORDER BY p.dateTimestamp DESC")
+    LiveData<List<PhotoEntity>> getNonDeletedPhotosByAlbumId(int albumId);
 
+    // Get non-hidden photos not in a specific album
+    @Query("SELECT * FROM photos WHERE id NOT IN (SELECT photoId FROM photo_album WHERE albumId = :currentAlbumId) " +
+            "AND isHidden != 1")
+    List<PhotoEntity> getPhotosNotInAlbum(int currentAlbumId);
+
+    @Query("SELECT * FROM photos WHERE isHidden != 1 ORDER BY id DESC")
+    List<PhotoEntity> getAllPhotosSync();
+
+    @Query("SELECT * FROM photos WHERE isDeleted != 1 ORDER BY id DESC")
+    List<PhotoEntity> getAllNonDeletedPhotos();
+
+    @Query("SELECT * FROM photos WHERE isDeleted != 1 AND isHidden != 1 ORDER BY dateTimestamp DESC")
+    LiveData<List<PhotoEntity>> getAllNonDeletedPhotosSync();
+
+    // Delete a photo by ID
+    @Query("DELETE FROM photos WHERE id = :photoId")
+    void deletePhotoById(int photoId);
+
+    // Get a photo by ID (synchronous)
+    @Query("SELECT * FROM photos WHERE id = :id")
+    PhotoEntity getPhotoByIdSync(int id);
+
+    // NEW: Get all hidden photos
+    @Query("SELECT * FROM photos WHERE isHidden = 1 ORDER BY dateTimestamp DESC")
+    LiveData<List<PhotoEntity>> getHiddenPhotos();
+
+    // NEW: Get all hidden photos synchronously
+    @Query("SELECT * FROM photos WHERE isHidden = 1 ORDER BY dateTimestamp DESC")
+    List<PhotoEntity> getHiddenPhotosSync();
+    @Query("UPDATE photos SET isFavorite = :isFavorite WHERE id = :photoId")
+    void updateFavoriteStatusDirectly(int photoId, boolean isFavorite);
+    @Query("UPDATE photos SET isHidden = :isHidden WHERE id = :photoId")
+    void updateHiddenStatusDirectly(int photoId, boolean isHidden);
+}

@@ -24,11 +24,11 @@
         <!-- Icon search -->
         <androidx.appcompat.widget.AppCompatImageView
             android:id="@+id/search_mag_icon"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
+            android:layout_width="20dp"
+            android:layout_height="14dp"
             android:layout_marginStart="8dp"
-            app:tint="?attr/colorOnBackground"
-            android:src="@drawable/ic_search" />
+            android:src="@drawable/ic_search"
+            app:tint="?attr/colorOnBackground" />
 
         <!-- Icon Cloud -->
         <androidx.appcompat.widget.AppCompatImageView
@@ -111,7 +111,7 @@
         app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
         app:spanCount="3"
         app:layout_constraintTop_toBottomOf="@id/customSearchView"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/bottomNavigationView"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         tools:listitem="@layout/item_photo"
@@ -123,7 +123,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         app:menu="@menu/bottom_nav_menu"
-        app:labelVisibilityMode="selected"
+        app:labelVisibilityMode="unlabeled"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
@@ -134,6 +134,7 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:background="?android:attr/windowBackground"
+        app:labelVisibilityMode="unlabeled"
         app:menu="@menu/bottom_nav_menu_selection_photo"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
