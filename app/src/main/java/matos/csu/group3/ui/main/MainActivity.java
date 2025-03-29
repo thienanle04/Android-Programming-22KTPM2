@@ -37,6 +37,7 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.Settings;
+import android.text.InputType;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -116,6 +117,7 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
     private ImageButton btnSelectAll;
     private ConstraintLayout constraintLayout;
     private static final int REQUEST_CODE_DISPLAY_PHOTO = 1001; // Unique request code
+    private static final int REQUEST_CODE_PHOTO_LIST = 1002;
 
 
     // Register the permission request launcher
@@ -185,9 +187,16 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
     @Override
     public void onItemClick(AlbumEntity album) {
         // Handle item click events here
-        Intent intent = new Intent(this, PhotoListOfAlbumActivity.class);
-        intent.putExtra("ALBUM_ID", album.getId());  // Pass the album ID
-        startActivity(intent);
+//        Intent intent = new Intent(this, PhotoListOfAlbumActivity.class);
+//        intent.putExtra("ALBUM_ID", album.getId());  // Pass the album ID
+//        startActivityForResult(intent, REQUEST_CODE_PHOTO_LIST);
+        if (album.isLocked()) {
+            // Hiển thị dialog yêu cầu mật khẩu
+            showPasswordDialog(album);
+        } else {
+            // Mở bình thường nếu không khóa
+            openAlbum(album);
+        }
     }
     private void resetBottomNavSelection(BottomNavigationView bottomNavView) {
         bottomNavView.getMenu().setGroupCheckable(0, true, false);
@@ -551,6 +560,38 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
             }
         });
     }
+    private void openAlbum(AlbumEntity album) {
+        Intent intent = new Intent(this, PhotoListOfAlbumActivity.class);
+        intent.putExtra("ALBUM_ID", album.getId());
+        startActivityForResult(intent, REQUEST_CODE_PHOTO_LIST);
+    }
+    private void showPasswordDialog(AlbumEntity album) {
+        // Tạo dialog
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Nhập mật khẩu");
+        builder.setMessage("Album này đã được khóa. Vui lòng nhập mật khẩu để tiếp tục.");
+
+        // Thêm input mật khẩu
+        final EditText input = new EditText(this);
+        input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        builder.setView(input);
+
+        // Nút xác nhận
+        builder.setPositiveButton("OK", (dialog, which) -> {
+            String password = input.getText().toString();
+            if(PasswordHelper.checkLockPassword(this, password)){
+                openAlbum(album);
+            }
+            else{
+                Toast.makeText(this, "Mật khẩu không đúng", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        // Nút hủy
+        builder.setNegativeButton("Hủy", (dialog, which) -> dialog.cancel());
+
+        builder.show();
+    }
     private void showHiddenAlbumBottomSheet() {
         HiddenAlbumBottomSheet bottomSheet = new HiddenAlbumBottomSheet();
         bottomSheet.setOnHiddenAlbumUnlockedListener(() -> {
@@ -797,6 +838,11 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
                         photoAdapter.notifyDataSetChanged();
                     }
                 }
+            }
+            else if (requestCode == REQUEST_CODE_PHOTO_LIST) {
+                int albumId = data.getIntExtra("ALBUM_ID", -1);
+                boolean isLocked = data.getBooleanExtra("IS_LOCKED", false);
+                albumAdapter.updateAlbumLockStatus(albumId, isLocked);
             }
         }
     }

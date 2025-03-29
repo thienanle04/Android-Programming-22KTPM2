@@ -22,6 +22,8 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.constraintlayout.widget.ConstraintLayout;
+import androidx.constraintlayout.widget.ConstraintSet;
 import androidx.core.content.FileProvider;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
@@ -66,11 +68,12 @@ public class PhotoListOfAlbumActivity extends AppCompatActivity implements Photo
     private  AlbumViewModel albumViewModel;
     private List<PhotoEntity> allPhotos;
     private int currentAlbumId;
-    private LinearLayout topNavigationBar;
-    private ImageButton btnBack;
-    private TextView tvSelectedCount;
+    private LinearLayout topNavigationBar, topNavigationSelectionBar;
+    private ImageButton btnBack, btnBackSelection, btnLock;
+    private TextView tvSelectedCount, tvAlbum;
     private ImageButton btnSelectAll;
     private BottomNavigationView bottomNavigationView;
+    private ConstraintLayout constraintLayout;
     @Override
     public void onPhotoSelected(PhotoEntity photo, boolean isSelected) {
         photo.setSelected(isSelected);
@@ -84,28 +87,81 @@ public class PhotoListOfAlbumActivity extends AppCompatActivity implements Photo
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_photo_list);
 
+        constraintLayout = findViewById(R.id.activity_photo_list);
         albumRepository = new AlbumRepository(getApplication());
         albumViewModel = new ViewModelProvider(this).get(AlbumViewModel.class);
         photoRecyclerView = findViewById(R.id.photoRecyclerView);
+
         topNavigationBar = findViewById(R.id.topNavigationBar);
+        topNavigationSelectionBar = findViewById(R.id.topNavigationSelectionBar);
+
+        btnBackSelection = findViewById(R.id.btnBackSelection);
         btnBack = findViewById(R.id.btnBack);
-        tvSelectedCount = findViewById(R.id.tvSelectedCount);
         btnSelectAll = findViewById(R.id.btnSelectAll);
-        btnBack.setOnClickListener(v -> {
+        btnLock = findViewById(R.id.btnToggleLock);
+
+        tvSelectedCount = findViewById(R.id.tvSelectedCount);
+        tvAlbum = findViewById(R.id.tvAlbum);
+
+        btnBackSelection.setOnClickListener(v -> {
             photoAdapter.setSelectionMode(false); // Tắt chế độ chọn ảnh
-            topNavigationBar.setVisibility(View.GONE); // Ẩn top navigation bar
+            topNavigationSelectionBar.setVisibility(View.GONE); // Ẩn top navigation selection bar
+            topNavigationBar.setVisibility(View.VISIBLE);
+            updateRecyclerViewConstraints(false);
             bottomNavigationView.setVisibility(View.GONE);
         });
+        btnBack.setOnClickListener(v -> onBackPressed());
         btnSelectAll.setOnClickListener(v -> {
             boolean isAllSelected = photoAdapter.isAllSelected();
             photoAdapter.selectAll(!isAllSelected); // Đảo ngược trạng thái chọn
         });
+        btnLock.setOnClickListener(v -> {
+            boolean isLocked = !album.isLocked();
+            albumRepository.toggleAlbumLock(currentAlbumId, isLocked);
+            if(isLocked){
+                btnLock.setImageResource(R.drawable.ic_lock);
+            } else {
+                btnLock.setImageResource(R.drawable.ic_lock_open);
+            }
+            Intent resultIntent = new Intent();
+            resultIntent.putExtra("ALBUM_ID", currentAlbumId);
+            resultIntent.putExtra("IS_LOCKED", isLocked);
+            setResult(RESULT_OK, resultIntent);
+        });
+
         photoRecyclerView.setLayoutManager(new LinearLayoutManager(this));
 
         Intent intent = getIntent();
         currentAlbumId = intent.getIntExtra("ALBUM_ID", -1);
 
         if (currentAlbumId != -1) {
+            albumRepository.getAlbumById(currentAlbumId).observe(this, new Observer<AlbumEntity>() {
+                @Override
+                public void onChanged(AlbumEntity _album) {
+                    if (_album != null) {
+                        album = _album;
+                        if(album.getName() != null){
+                            String albumName = album.getName();
+                            if (!albumName.isEmpty()) {
+                                // Viết hoa chữ cái đầu và giữ nguyên các chữ cái khác
+                                String capitalized = albumName.substring(0, 1).toUpperCase()
+                                        + albumName.substring(1).toLowerCase();
+                                tvAlbum.setText(capitalized);
+                            } else {
+                                tvAlbum.setText(albumName);
+                            }
+                        }
+                        if(album.isLocked()){
+                            btnLock.setImageResource(R.drawable.ic_lock);
+                        } else {
+                            btnLock.setImageResource(R.drawable.ic_lock_open);
+                        }
+                    } else {
+                        tvAlbum.setText(""); // Hoặc giá trị mặc định khi album null
+                    }
+
+                }
+            });
 
             AppDatabase db = Room.databaseBuilder(getApplicationContext(), AppDatabase.class, "database-name").allowMainThreadQueries().build();
             photoDao = db.photoDao();
@@ -164,7 +220,9 @@ public class PhotoListOfAlbumActivity extends AppCompatActivity implements Photo
         allPhotos = new ArrayList<>();
         photoAdapter = new PhotoSelectionAdapter(allPhotos, this, false);
         photoAdapter.setOnLongPressListener(() -> {
-            topNavigationBar.setVisibility(View.VISIBLE); // Hiển thị top navigation bar
+            topNavigationSelectionBar.setVisibility(View.VISIBLE); // Hiển thị top navigation bar
+            topNavigationBar.setVisibility(View.GONE);
+            updateRecyclerViewConstraints(true);
             updateSelectedCount();
             bottomNavigationView.setVisibility(View.VISIBLE); // Hiển thị BottomNavigationView
         });
@@ -462,5 +520,30 @@ public class PhotoListOfAlbumActivity extends AppCompatActivity implements Photo
         } else {
             Toast.makeText(context, "Không có ứng dụng hỗ trợ chia sẻ ảnh", Toast.LENGTH_SHORT).show();
         }
+    }
+    void updateRecyclerViewConstraints(boolean isSeletionView) {
+        ConstraintSet constraintSet = new ConstraintSet();
+        constraintSet.clone(constraintLayout); // Sao chép các ràng buộc hiện tại
+
+        if (isSeletionView) {
+            // Ràng buộc với customSearchView
+            constraintSet.connect(
+                    R.id.photoRecyclerView,
+                    ConstraintSet.TOP,
+                    R.id.topNavigationSelectionBar,
+                    ConstraintSet.BOTTOM
+            );
+        } else {
+            // Ràng buộc với topNavigationBar
+            constraintSet.connect(
+                    R.id.photoRecyclerView,
+                    ConstraintSet.TOP,
+                    R.id.topNavigationBar,
+                    ConstraintSet.BOTTOM
+            );
+        }
+
+        // Áp dụng các thay đổi
+        constraintSet.applyTo(constraintLayout);
     }
 }

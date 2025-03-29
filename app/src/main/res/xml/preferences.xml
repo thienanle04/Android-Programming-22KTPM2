@@ -10,9 +10,14 @@
         app:title="Enable message notifications"/>
 
     <Preference
-        app:key="set_password"
-        app:title="Set Password"
-        app:summary="Set or change your application password" />
+        app:key="set_hide_password"
+        app:title="Set Hidden Album Password"
+        app:summary="Set or change password for hidden albums" />
+
+    <Preference
+        app:key="set_lock_password"
+        app:title="Set Lock Password"
+        app:summary="Set or change password to lock albums" />
 
     <Preference
         app:key="feedback"

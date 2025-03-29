@@ -137,12 +137,14 @@ public class AlbumAdapter extends RecyclerView.Adapter<AlbumAdapter.AlbumViewHol
     static class AlbumViewHolder extends RecyclerView.ViewHolder {
         private TextView albumNameTextView;
         private CheckBox checkBox; // Thêm CheckBox
+        private ImageView lockIcon;
         private ImageView folderImageView;
 
         public AlbumViewHolder(@NonNull View itemView) {
             super(itemView);
             albumNameTextView = itemView.findViewById(R.id.albumNameTextView);
             checkBox = itemView.findViewById(R.id.checkBox); // Ánh xạ CheckBox
+            lockIcon = itemView.findViewById(R.id.lockIcon);
             folderImageView = itemView.findViewById(R.id.folderImageView);
         }
 
@@ -152,7 +154,12 @@ public class AlbumAdapter extends RecyclerView.Adapter<AlbumAdapter.AlbumViewHol
                 albumName = albumName.substring(0, 1).toUpperCase() + albumName.substring(1).toLowerCase();
             }
             albumNameTextView.setText(albumName);
-
+            if(album.isLocked()){
+                lockIcon.setVisibility(View.VISIBLE);
+            }
+            else {
+                lockIcon.setVisibility(View.GONE);
+            }
             // Ẩn/hiện CheckBox dựa trên isSelectionMode
             if (isSelectionMode) {
                 checkBox.setVisibility(View.VISIBLE);
@@ -180,5 +187,15 @@ public class AlbumAdapter extends RecyclerView.Adapter<AlbumAdapter.AlbumViewHol
             }
         }
         return selectedAlbums;
+    }
+    public void updateAlbumLockStatus(int albumId, boolean isLocked) {
+        for (int i = 0; i < albumList.size(); i++) {
+            AlbumEntity album = albumList.get(i);
+            if (album.getId() == albumId) {
+                album.setLocked(isLocked);
+                notifyItemChanged(i, "LOCK_STATUS_CHANGED"); // Sử dụng payload để tối ưu
+                break;
+            }
+        }
     }
 }

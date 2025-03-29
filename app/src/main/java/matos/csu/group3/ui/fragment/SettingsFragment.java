@@ -32,10 +32,17 @@ public class SettingsFragment extends PreferenceFragmentCompat {
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
         setPreferencesFromResource(R.xml.preferences, rootKey);
 
-        Preference setPasswordPref = findPreference("set_password");
-        if (setPasswordPref != null) {
-            setPasswordPref.setOnPreferenceClickListener(preference -> {
-                showSetPasswordDialog();
+        Preference setHidePasswordPref = findPreference("set_hide_password");
+        if (setHidePasswordPref != null) {
+            setHidePasswordPref.setOnPreferenceClickListener(preference -> {
+                showSetHidePasswordDialog();
+                return true;
+            });
+        }
+        Preference setLockPasswordPref = findPreference("set_lock_password");
+        if (setLockPasswordPref != null) {
+            setLockPasswordPref.setOnPreferenceClickListener(preference -> {
+                showSetLockPasswordDialog();
                 return true;
             });
         }
@@ -85,7 +92,7 @@ public class SettingsFragment extends PreferenceFragmentCompat {
             googleSignInPref.setSummary(isLoggedIn ? "Đã đăng nhập với " + findPreference("user_email"): "Chưa đăng nhập");
         }
     }
-    private void showSetPasswordDialog() {
+    private void showSetHidePasswordDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
         builder.setTitle("Thiết lập mật khẩu album ẩn");
 
@@ -96,8 +103,25 @@ public class SettingsFragment extends PreferenceFragmentCompat {
         builder.setPositiveButton("Lưu", (dialog, which) -> {
             String password = input.getText().toString();
             if (!password.isEmpty()) {
-                PasswordHelper.setPassword(getContext(), password);
-                Toast.makeText(getContext(), "Mật khẩu đã được thiết lập", Toast.LENGTH_SHORT).show();
+                PasswordHelper.setHidePassword(getContext(), password);
+            }
+        });
+        builder.setNegativeButton("Hủy", (dialog, which) -> dialog.cancel());
+
+        builder.show();
+    }
+    private void showSetLockPasswordDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+        builder.setTitle("Thiết lập mật khẩu khóa album");
+
+        final EditText input = new EditText(getContext());
+        input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        builder.setView(input);
+
+        builder.setPositiveButton("Lưu", (dialog, which) -> {
+            String password = input.getText().toString();
+            if (!password.isEmpty()) {
+                PasswordHelper.setLockPassword(getContext(), password);
             }
         });
         builder.setNegativeButton("Hủy", (dialog, which) -> dialog.cancel());

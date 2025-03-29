@@ -21,6 +21,17 @@
         android:layout_alignEnd="@id/folderImageView"
         android:layout_margin="8dp"
         android:visibility="gone"/>
+    <!-- Lock icon (visible when album is locked) -->
+    <ImageView
+        android:id="@+id/lockIcon"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_alignTop="@id/folderImageView"
+        android:layout_alignEnd="@id/folderImageView"
+        android:layout_margin="8dp"
+        android:src="@drawable/ic_lock"
+        android:visibility="gone"
+        android:contentDescription="Locked album"/>
 
     <!-- TextView nằm dưới ImageView -->
     <TextView

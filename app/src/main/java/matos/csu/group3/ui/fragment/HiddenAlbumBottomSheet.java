@@ -44,13 +44,13 @@ public class HiddenAlbumBottomSheet extends BottomSheetDialogFragment {
 
         btnUnlock.setOnClickListener(v -> {
             String password = etPassword.getText().toString();
-            if (PasswordHelper.checkPassword(requireContext(), password)) {
+            if (PasswordHelper.checkHidePassword(requireContext(), password)) {
                 if (listener != null) {
                     listener.onUnlockSuccess();
                 }
                 dismiss();
             } else {
-                Toast.makeText(requireContext(), "Mật khẩu không đúng", Toast.LENGTH_SHORT).show();
+                Toast.makeText(requireContext(), "Mật khẩu không đúng: " + password, Toast.LENGTH_SHORT).show();
             }
         });
     }

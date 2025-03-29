@@ -233,4 +233,9 @@ public class AlbumRepository {
             new Handler(Looper.getMainLooper()).post(() -> callback.accept(trashAlbum));
         });
     }
+    public void toggleAlbumLock(int albumId, boolean isLocked) {
+        executor.execute(() -> {
+            albumDao.toggleAlbumLock(albumId, isLocked);
+        });
+    }
 }

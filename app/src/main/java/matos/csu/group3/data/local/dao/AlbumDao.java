@@ -37,4 +37,7 @@ public interface AlbumDao {
 
     @Query("SELECT id FROM albums WHERE name = :albumName LIMIT 1")
     LiveData<Integer> getAlbumIdByName(String albumName);
+
+    @Query("UPDATE albums SET isLocked = :isLocked WHERE id = :albumId")
+    void toggleAlbumLock(int albumId, boolean isLocked);
 }

@@ -53,4 +53,7 @@ public class AlbumViewModel extends AndroidViewModel {
     public LiveData<List<PhotoAlbum>> getNonDeletedPhotosByAlbumId(int albumId){
         return albumRepository.getNonDeletedPhotosByAlbumId(albumId);
     }
+    public void toggleAlbumLock(int albumId, boolean isLocked) {
+        albumRepository.toggleAlbumLock(albumId, isLocked);
+    }
 }
