@@ -25,6 +25,7 @@
         app:layout_constraintTop_toBottomOf="@id/txtSoloMsg"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
+
     <!-- ImageView -->
     <ImageView
         android:id="@+id/imgSoloPhoto"
