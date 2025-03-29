@@ -175,8 +175,20 @@ public class PhotoListOfAlbumActivity extends AppCompatActivity implements Photo
         btnAdd.setOnClickListener(v -> showPhotoSelectionDialog());
         // Ánh xạ view
         bottomNavigationView = findViewById(R.id.bottomNavigationView);
-        resetBottomNavSelection(bottomNavigationView);
+
         bottomNavigationView.setVisibility(View.GONE);
+
+        // Determine if the current album is the Trash album
+        albumRepository.getNameByAlbumId(currentAlbumId).observe(this, albumName -> {
+            if ("Trash".equals(albumName)) {
+                bottomNavigationView.getMenu().clear();
+                bottomNavigationView.inflateMenu(R.menu.bottom_nav_menu_trash_album);
+            } else {
+                bottomNavigationView.getMenu().clear();
+                bottomNavigationView.inflateMenu(R.menu.bottom_nav_menu_album);
+            }
+        });
+
         bottomNavigationView.setOnItemSelectedListener(item -> {
             if (item.getItemId() == R.id.action_delete) {
                 // Handle delete action
@@ -202,9 +214,26 @@ public class PhotoListOfAlbumActivity extends AppCompatActivity implements Photo
                     Toast.makeText(this, "Vui lòng chọn ít nhất một ảnh để chia sẻ", Toast.LENGTH_SHORT).show();
                 }
                 return true;
+            } else if (item.getItemId() == R.id.action_restore) {
+                List<PhotoEntity> selectedPhotos = allPhotos.stream()
+                        .filter(PhotoEntity::isSelected)
+                        .collect(Collectors.toList());
+                if (!selectedPhotos.isEmpty()) {
+                    restorePhotos(selectedPhotos);
+                }
+                return true;
+            } else if (item.getItemId() == R.id.action_delete2) {
+                List<PhotoEntity> selectedPhotos = allPhotos.stream()
+                        .filter(PhotoEntity::isSelected)
+                        .collect(Collectors.toList());
+                if (!selectedPhotos.isEmpty()) {
+                    deletePhotosPermanently(selectedPhotos);
+                }
+                return true;
             }
             return false;
         });
+        resetBottomNavSelection(bottomNavigationView);
     }
     private void resetBottomNavSelection(BottomNavigationView bottomNavView) {
         bottomNavView.getMenu().setGroupCheckable(0, true, false);
@@ -545,5 +574,45 @@ public class PhotoListOfAlbumActivity extends AppCompatActivity implements Photo
 
         // Áp dụng các thay đổi
         constraintSet.applyTo(constraintLayout);
+    }
+
+
+    private void restorePhotos(List<PhotoEntity> photos) {
+        new AlertDialog.Builder(this)
+                .setTitle("Khôi phục ảnh")
+                .setMessage("Bạn có chắc chắn muốn khôi phục ảnh này?")
+                .setPositiveButton("Khôi phục", (dialog, which) -> {
+                    albumRepository.getNameByAlbumId(currentAlbumId).observe(this, albumName -> {
+                        if ("Trash".equals(albumName)) {
+                            photoRepository.restoreFromTrash(photos, currentAlbumId, () -> {
+                                runOnUiThread(() -> {
+                                    allPhotos.removeAll(photos);
+                                    photoAdapter.notifyDataSetChanged();
+                                    Toast.makeText(this, "Khôi phục ảnh thành công", Toast.LENGTH_SHORT).show();
+                                });
+                            });
+                        }
+                    });
+                })
+                .setNegativeButton("Hủy", null)
+                .show();
+    }
+
+    private void deletePhotosPermanently(List<PhotoEntity> photos) {
+        new AlertDialog.Builder(this)
+                .setTitle("Xóa vĩnh viễn")
+                .setMessage("Bạn có chắc chắn muốn xóa vĩnh viễn những ảnh này không?")
+                .setPositiveButton("Xóa", (dialog, which) -> {
+                    for (PhotoEntity photo : photos) {
+                        photoRepository.deletePhotoById(photo.getId());
+                    }
+                    runOnUiThread(() -> {
+                        allPhotos.removeAll(photos);
+                        photoAdapter.notifyDataSetChanged();
+                        Toast.makeText(this, "Đã xóa vĩnh viễn ảnh", Toast.LENGTH_SHORT).show();
+                    });
+                })
+                .setNegativeButton("Hủy", null)
+                .show();
     }
 }

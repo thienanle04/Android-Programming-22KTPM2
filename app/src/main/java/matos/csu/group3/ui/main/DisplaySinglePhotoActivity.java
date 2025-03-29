@@ -118,6 +118,7 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
     private void loadCurrentPhoto() {
         if (isInvalidPosition()) return;
 
+        photoViewModel.getPhotoById(photoIds.get(currentPosition)).removeObservers(this);
         photoViewModel.getPhotoById(photoIds.get(currentPosition)).observe(this, new Observer<PhotoEntity>() {
             @Override
             public void onChanged(PhotoEntity photo) {
@@ -174,10 +175,7 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
         photoRepository.movePhotosToTrash(photosToDelete);
         photoRepository.schedulePermanentDeletion(photosToDelete, this);
 
-        // Thông báo cho MainActivity
-        Intent resultIntent = new Intent();
-        resultIntent.putExtra("deletedPhotoId", photo.getId());
-        setResult(RESULT_OK, resultIntent);
+
 
         // Xác định vị trí ảnh bị xóa
         int removedPosition = photoIds.indexOf(photo.getId());
@@ -201,6 +199,7 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
                 currentPosition = removedPosition;
             }
 
+            viewPager.setAdapter(photoPagerAdapter);
             viewPager.setCurrentItem(currentPosition, false);
             loadCurrentPhoto(); // Cập nhật thông tin ảnh mới
         }
@@ -347,19 +346,27 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
                                     runOnUiThread(() -> {
                                         Toast.makeText(this, "Đã khôi phục ảnh", Toast.LENGTH_SHORT).show();
 
-                                        // Update UI
                                         int removedPosition = photoIds.indexOf(photo.getId());
-                                        photoIds.remove(Integer.valueOf(photo.getId()));
-                                        photoPagerAdapter.notifyDataSetChanged();
+                                        if (removedPosition == -1) {
+                                            Log.e("DisplaySinglePhoto", "Photo ID not found in photoIds: " + photo.getId());
+                                            return;
+                                        }
 
-                                        // Update current photo
+                                        // Delete from list
+                                        photoIds.remove(removedPosition);
+                                        photoPagerAdapter.notifyItemRemoved(removedPosition); // Tối ưu hơn notifyDataSetChanged()
+
+                                        // Update Position
                                         if (!photoIds.isEmpty()) {
+                                            // Move to previous photo if the last photo is deleted
                                             if (removedPosition >= photoIds.size()) {
                                                 currentPosition = photoIds.size() - 1;
                                             }
+
+                                            viewPager.setAdapter(photoPagerAdapter);
+                                            viewPager.setCurrentItem(currentPosition, false);
                                             loadCurrentPhoto(); // Refresh the current photo
                                         }
-
 
                                         if (photoIds.isEmpty()) {
                                             finish();
