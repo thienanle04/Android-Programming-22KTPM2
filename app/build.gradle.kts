@@ -89,6 +89,7 @@ dependencies {
     implementation(libs.preference.ktx)
     implementation(libs.appauth.v0111)
     implementation(libs.lifecycle.livedata.ktx)
+    implementation(libs.flexbox)
     implementation(libs.work.runtime.ktx)
     implementation(libs.swiperefreshlayout)
 }

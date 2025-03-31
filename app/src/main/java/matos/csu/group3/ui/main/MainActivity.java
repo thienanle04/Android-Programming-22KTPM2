@@ -513,17 +513,10 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
         });
 
         // Khởi tạo SearchView và các sự kiện liên quan
-        EditText searchEditText = findViewById(R.id.search_src_text);
         ImageView searchIcon = findViewById(R.id.search_mag_icon);
         searchIcon.setOnClickListener(v -> {
-            String query = searchEditText.getText().toString();
-            filterPhotos(query);
-        });
-
-        searchEditText.setOnEditorActionListener((v, actionId, event) -> {
-            String query = searchEditText.getText().toString();
-            filterPhotos(query);
-            return true;
+            Intent searchIntent = new Intent(MainActivity.this, SearchActivity.class);
+            startActivity(searchIntent);
         });
 
         // Khởi tạo BottomNavigationView

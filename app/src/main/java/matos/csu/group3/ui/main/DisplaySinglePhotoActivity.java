@@ -6,6 +6,9 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ImageView;
 import android.os.Environment;
 import android.provider.Settings;
 import android.util.Log;
@@ -15,7 +18,14 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.android.flexbox.FlexDirection;
+import com.google.android.flexbox.FlexWrap;
+import com.google.android.flexbox.FlexboxLayoutManager;
+import com.google.android.flexbox.JustifyContent;
 import androidx.lifecycle.Observer;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.viewpager2.widget.ViewPager2;
@@ -29,6 +39,10 @@ import java.util.Collections;
 import java.util.List;
 
 import matos.csu.group3.R;
+import matos.csu.group3.data.local.AppDatabase;
+import matos.csu.group3.data.local.dao.PhotoDao;
+import matos.csu.group3.data.local.entity.Hashtags;
+import matos.csu.group3.ui.adapter.HashtagAdapter;
 import matos.csu.group3.data.local.entity.AlbumEntity;
 import matos.csu.group3.data.local.entity.PhotoEntity;
 import matos.csu.group3.repository.AlbumRepository;
@@ -38,10 +52,16 @@ import matos.csu.group3.utils.PhotoCache;
 import matos.csu.group3.viewmodel.PhotoViewModel;
 import matos.csu.group3.repository.PhotoRepository;
 
-public class DisplaySinglePhotoActivity extends AppCompatActivity {
+public class DisplaySinglePhotoActivity extends AppCompatActivity implements HashtagAdapter.OnHashtagRemoveListener {
 
     private ViewPager2 viewPager;
     private TextView txtSoloMsg;
+    private Button btnSoloBack, btnEdit, btnShare, btnAddHashtag;
+    private RecyclerView recyclerViewHashtags;
+    private HashtagAdapter hashtagAdapter;
+
+    private PhotoEntity photo;
+    private PhotoDao photoDao;
     private BottomNavigationView bottomNavigationView;
     private ImageButton btnSoloBack;
     private ImageButton btnToggleVisibility;

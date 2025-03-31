@@ -21,6 +21,7 @@ roomCommonJvm = "2.7.0-alpha13"
 ucrop = "2.2.10"
 recyclerview = "1.4.0"
 lifecycle = "2.6.2"
+flexbox = "3.0.0"
 workRuntimeKtx = "2.10.0"
 swiperefreshlayout = "1.1.0"
 
@@ -49,6 +50,7 @@ room-common-jvm = { group = "androidx.room", name = "room-common-jvm", version.r
 ucrop = { module = "com.github.yalantis:ucrop", version.ref = "ucrop" }
 recyclerview = { group = "androidx.recyclerview", name = "recyclerview", version.ref = "recyclerview" }
 lifecycle-livedata-ktx = { group = "androidx.lifecycle", name = "lifecycle-livedata-ktx", version.ref = "lifecycle" }
+flexbox = { module = "com.google.android.flexbox:flexbox", version.ref = "flexbox" }
 work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "workRuntimeKtx" }
 swiperefreshlayout = { module = "androidx.swiperefreshlayout:swiperefreshlayout", version.ref = "swiperefreshlayout" }
 [plugins]
