@@ -4,6 +4,8 @@ import android.app.Application;
 import android.content.ContentResolver;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.MediaStore;
 import android.util.Log;
 
@@ -18,6 +20,8 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Consumer;
+
 import matos.csu.group3.data.local.AppDatabase;
 import matos.csu.group3.data.local.dao.AlbumDao;
 import matos.csu.group3.data.local.dao.PhotoAlbumDao;
@@ -50,19 +54,17 @@ public class AlbumRepository {
     // Load albums and photos from MediaStore
     private void loadAlbums() {
         executor.execute(() -> {
-            List<PhotoEntity> photos = photoDao.getAllPhotosSync();
-            Log.d("Initial Photos", "size: " + photos.size());
+            // 1. Load và xử lý các album từ MediaStore như bình thường
+            List<PhotoEntity> photos = photoDao.getAllNonDeletedPhotos();
 
             Map<String, List<PhotoEntity>> albumPhotoMap = new HashMap<>();
             for (PhotoEntity photo : photos) {
                 String path = photo.getFilePath().toLowerCase();
                 String albumName = extractAlbumNameFromPath(path);
                 if (albumName != null) {
-                    Log.d("AlbumDebug", "Album: " + albumName);
                     albumPhotoMap.computeIfAbsent(albumName, k -> new ArrayList<>()).add(photo);
                 }
             }
-            Log.d("AlbumMap", "Tổng số album: " + albumPhotoMap.size());
 
             for (Map.Entry<String, List<PhotoEntity>> entry : albumPhotoMap.entrySet()) {
                 String albumName = entry.getKey();
@@ -75,7 +77,6 @@ public class AlbumRepository {
                     album = new AlbumEntity();
                     album.setName(albumName);
                     albumId = (int) albumDao.insert(album);
-                    Log.e("AlbumInsert", "Inserted album ID: " + albumId);
 
                     if (albumId == -1) {
                         album = albumDao.getAlbumByNameSync(albumName);
@@ -90,15 +91,11 @@ public class AlbumRepository {
                     albumId = album.getId();
                 }
 
-                Log.d("AlbumFinal", "Album ID: " + albumId);
-
-                // 🔍 Kiểm tra albumId hợp lệ
                 if (albumId <= 0) {
                     Log.e("PhotoInsertError", "Album ID không hợp lệ: " + albumId);
                     continue;
                 }
 
-                // 🔍 Thêm kiểm tra xem `photo.getId()` có hợp lệ không
                 for (PhotoEntity photo : albumPhotos) {
                     int photoId = photo.getId();
 
@@ -112,7 +109,6 @@ public class AlbumRepository {
                         PhotoAlbum photoAlbum = new PhotoAlbum(photoId, albumId);
                         try {
                             photoAlbumDao.insert(photoAlbum);
-                            Log.d("PhotoAlbumInsert", "Thêm ảnh ID " + photoId + " vào album ID " + albumId);
                         } catch (Exception e) {
                             Log.e("PhotoAlbumInsertError", "Lỗi khi chèn ảnh vào album: " + e.getMessage());
                         }
@@ -120,10 +116,53 @@ public class AlbumRepository {
                 }
             }
 
+            // 2. Kiểm tra và tạo album "Favourite" sau khi đã load xong các album khác
+            String favouriteAlbumName = "Favourite";
+            AlbumEntity favAlbum = albumDao.getAlbumByNameSync(favouriteAlbumName);
+            if (favAlbum == null) {
+                favAlbum = new AlbumEntity();
+                favAlbum.setName(favouriteAlbumName);
+                long favAlbumId = albumDao.insert(favAlbum);
+            } else {
+                Log.d("FavouriteAlbum", "Album Favourite đã tồn tại ID: " + favAlbum.getId());
+            }
+
+            // Lấy danh sách ảnh yêu thích
+            List<PhotoEntity> favouritePhotos = new ArrayList<>();
+            for (PhotoEntity photo : photos) {
+                if (photo.isFavorite()) { // Kiểm tra ảnh có phải là yêu thích không
+                    favouritePhotos.add(photo);
+                }
+            }
+
+            // Thêm ảnh yêu thích vào album "Favourite"
+            for (PhotoEntity photo : favouritePhotos) {
+                int photoId = photo.getId();
+                int albumId = favAlbum.getId();
+
+                if (photoId <= 0 || albumId <= 0) {
+                    Log.e("FavouriteAlbumError", "Photo ID hoặc Album ID không hợp lệ: Photo ID = " + photoId + ", Album ID = " + albumId);
+                    continue;
+                }
+
+                // Kiểm tra xem ảnh đã tồn tại trong album "Favourite" chưa
+                int count = photoAlbumDao.countPhotoInAlbum(photoId, albumId);
+                if (count == 0) {
+                    PhotoAlbum photoAlbum = new PhotoAlbum(photoId, albumId);
+                    try {
+                        photoAlbumDao.insert(photoAlbum);
+                    } catch (Exception e) {
+                        Log.e("FavouriteAlbumError", "Lỗi khi thêm ảnh vào album Favourite: " + e.getMessage());
+                    }
+                }
+            }
+
+            // 3. Cập nhật lên LiveData
             List<AlbumEntity> albumList = albumDao.getAllAlbumsSync();
             allAlbums.postValue(albumList);
         });
     }
+
 
 
     private String extractAlbumNameFromPath(String path) {
@@ -172,6 +211,31 @@ public class AlbumRepository {
         executor.execute(() -> {
             // Xóa ảnh khỏi album (ví dụ: cập nhật albumId của ảnh về null hoặc xóa khỏi bảng trung gian)
             photoAlbumDao.deletePhotoFromAlbum(photoId, albumId);
+        });
+    }
+    public LiveData<PhotoEntity> getFirstPhotoOfAlbum(int albumId) {
+        return photoAlbumDao.getFirstPhotoOfAlbum(albumId);
+    }
+    public LiveData<List<PhotoAlbum>> getPhotosByAlbumId(int albumId){
+        return photoAlbumDao.getPhotosByAlbumId(albumId);
+    }
+
+    public LiveData<List<PhotoAlbum>> getNonDeletedPhotosByAlbumId(int albumId){
+        return photoAlbumDao.getNonDeletedPhotosByAlbumId(albumId);
+    }
+
+    public LiveData<String> getNameByAlbumId(int albumId){
+        return albumDao.getAlbumNameById(albumId);
+    }
+    public void getTrashAlbum(Consumer<AlbumEntity> callback) {
+        executor.execute(() -> {
+            AlbumEntity trashAlbum = albumDao.getAlbumByNameSync("Trash");
+            new Handler(Looper.getMainLooper()).post(() -> callback.accept(trashAlbum));
+        });
+    }
+    public void toggleAlbumLock(int albumId, boolean isLocked) {
+        executor.execute(() -> {
+            albumDao.toggleAlbumLock(albumId, isLocked);
         });
     }
 }

@@ -14,6 +14,7 @@ public class AlbumEntity {
     private String name;
     private String createdAt;
     private Boolean isSelected = false;
+    private boolean isLocked;
 
     public AlbumEntity(){}
     public AlbumEntity(String name, String createdAt){
@@ -49,5 +50,13 @@ public class AlbumEntity {
     }
     public Boolean isSelected(){
         return this.isSelected;
+    }
+
+    public boolean isLocked() {
+        return isLocked;
+    }
+
+    public void setLocked(boolean locked) {
+        isLocked = locked;
     }
 }

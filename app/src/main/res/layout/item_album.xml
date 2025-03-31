@@ -1,43 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:padding="8dp">
 
-    <!-- LinearLayout chứa ImageView và TextView -->
-    <LinearLayout
+    <!-- ImageView -->
+    <ImageView
+        android:id="@+id/folderImageView"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:gravity="center">
+        android:layout_height="120dp"
+        android:scaleType="centerCrop"
+        android:adjustViewBounds="true"/>
 
-        <!-- ImageView để hiển thị hình ảnh thư mục -->
-        <androidx.appcompat.widget.AppCompatImageView
-            android:id="@+id/folderImageView"
-            android:layout_width="100dp"
-            android:layout_height="100dp"
-            android:src="@drawable/icon_folder"
-            app:tint="?attr/colorOnBackground"
-            android:layout_gravity="center_horizontal"/>
-
-        <!-- Tên album -->
-        <TextView
-            android:id="@+id/albumNameTextView"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Album Name"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:gravity="center"
-            android:layout_marginTop="8dp"/>
-    </LinearLayout>
-
-    <!-- CheckBox ở góc trên bên phải -->
+    <!-- CheckBox nằm trên ImageView -->
     <CheckBox
         android:id="@+id/checkBox"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="top|end"
-        android:visibility="gone" /> <!-- Mặc định ẩn -->
-</FrameLayout>
+        android:layout_alignTop="@id/folderImageView"
+        android:layout_alignEnd="@id/folderImageView"
+        android:layout_margin="8dp"
+        android:visibility="gone"/>
+    <!-- Lock icon (visible when album is locked) -->
+    <ImageView
+        android:id="@+id/lockIcon"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_alignTop="@id/folderImageView"
+        android:layout_alignEnd="@id/folderImageView"
+        android:layout_margin="8dp"
+        android:src="@drawable/ic_lock"
+        android:visibility="gone"
+        android:contentDescription="Locked album"/>
+
+    <!-- TextView nằm dưới ImageView -->
+    <TextView
+        android:id="@+id/albumNameTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/folderImageView"
+        android:text="Album Name"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginTop="8dp"/>
+</RelativeLayout>
