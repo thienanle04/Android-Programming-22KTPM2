@@ -18,7 +18,6 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -52,18 +51,17 @@ import matos.csu.group3.utils.PhotoCache;
 import matos.csu.group3.viewmodel.PhotoViewModel;
 import matos.csu.group3.repository.PhotoRepository;
 
-public class DisplaySinglePhotoActivity extends AppCompatActivity implements HashtagAdapter.OnHashtagRemoveListener {
+public class DisplaySinglePhotoActivity extends AppCompatActivity {
 
     private ViewPager2 viewPager;
     private TextView txtSoloMsg;
-    private Button btnSoloBack, btnEdit, btnShare, btnAddHashtag;
+    private ImageButton btnSoloBack, btnEdit, btnShare, btnAddHashtag;
     private RecyclerView recyclerViewHashtags;
     private HashtagAdapter hashtagAdapter;
 
     private PhotoEntity photo;
     private PhotoDao photoDao;
     private BottomNavigationView bottomNavigationView;
-    private ImageButton btnSoloBack;
     private ImageButton btnToggleVisibility;
     private PhotoViewModel photoViewModel;
     private PhotoPagerAdapter photoPagerAdapter;
