@@ -336,8 +336,9 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
                         .filter(PhotoEntity::isSelected)
                         .collect(Collectors.toList());
                 if (!selectedPhotos.isEmpty()) {
-                    photoViewModel.addPhotosToFavourite(selectedPhotos);
+                    photoViewModel.addPhotosToFavorite(selectedPhotos);
                     Toast.makeText(this, "Đã thêm " + selectedPhotos.size() + " ảnh vào yêu thích", Toast.LENGTH_SHORT).show();
+                    allPhotos.forEach(photo -> photo.setSelected(false));
                     // Cập nhật RecyclerView hoặc giao diện khác nếu cần
                     loadAlbums(); // Ví dụ: Tải lại danh sách album
                 } else {

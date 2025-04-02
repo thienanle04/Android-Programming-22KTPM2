@@ -74,6 +74,7 @@ public class PhotoListOfAlbumActivity extends AppCompatActivity implements Photo
     private ImageButton btnSelectAll;
     private BottomNavigationView bottomNavigationView;
     private ConstraintLayout constraintLayout;
+    private boolean isTrashAlbum = false;
     @Override
     public void onPhotoSelected(PhotoEntity photo, boolean isSelected) {
         photo.setSelected(isSelected);
@@ -128,6 +129,8 @@ public class PhotoListOfAlbumActivity extends AppCompatActivity implements Photo
             resultIntent.putExtra("IS_LOCKED", isLocked);
             setResult(RESULT_OK, resultIntent);
         });
+        FloatingActionButton btnAdd = findViewById(R.id.addPhotoToButton);
+        btnAdd.setOnClickListener(v -> showPhotoSelectionDialog());
 
         photoRecyclerView.setLayoutManager(new LinearLayoutManager(this));
 
@@ -142,6 +145,8 @@ public class PhotoListOfAlbumActivity extends AppCompatActivity implements Photo
                         album = _album;
                         if(album.getName() != null){
                             String albumName = album.getName();
+                            isTrashAlbum = album.getName().equals("Trash");
+                            btnAdd.setVisibility(isTrashAlbum ? View.GONE : View.VISIBLE);
                             if (!albumName.isEmpty()) {
                                 // Viết hoa chữ cái đầu và giữ nguyên các chữ cái khác
                                 String capitalized = albumName.substring(0, 1).toUpperCase()
@@ -171,8 +176,7 @@ public class PhotoListOfAlbumActivity extends AppCompatActivity implements Photo
             Toast.makeText(this, "Invalid album ID", Toast.LENGTH_SHORT).show();
         }
 
-        FloatingActionButton btnAdd = findViewById(R.id.addPhotoToButton);
-        btnAdd.setOnClickListener(v -> showPhotoSelectionDialog());
+
         // Ánh xạ view
         bottomNavigationView = findViewById(R.id.bottomNavigationView);
 

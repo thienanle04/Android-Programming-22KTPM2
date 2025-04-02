@@ -20,6 +20,7 @@ import android.widget.Toast;
 
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
+import androidx.lifecycle.Observer;
 import androidx.lifecycle.Transformations;
 import androidx.work.Data;
 import androidx.work.OneTimeWorkRequest;
@@ -183,14 +184,34 @@ public class PhotoRepository {
         return photoDao.getHiddenPhotos();
     }
     public void addPhotosToAlbum(int albumId, List<PhotoEntity> photos) {
-        executor.execute(() -> {
-            for (PhotoEntity photo : photos) {
-                // Kiểm tra xem ảnh đã tồn tại trong album chưa
-                int count = photoAlbumDao.countPhotoInAlbum(photo.getId(), albumId);
-                if (count == 0) { // Nếu ảnh chưa tồn tại trong album
-                    PhotoAlbum photoAlbum = new PhotoAlbum(photo.getId(), albumId);
-                    photoAlbumDao.insert(photoAlbum);
-                }
+        // Lấy LiveData tên album
+        LiveData<String> albumNameLiveData = albumDao.getAlbumNameById(albumId);
+
+        // Observe dữ liệu
+        albumNameLiveData.observeForever(new Observer<String>() {
+            @Override
+            public void onChanged(String albumName) {
+                // Ngừng observe sau khi nhận được giá trị
+                albumNameLiveData.removeObserver(this);
+
+                executor.execute(() -> {
+                    if ("Favorite".equals(albumName)) {
+                        // Xử lý cho album Favorite
+                        addPhotosToFavorite(photos);
+                    } else {
+                        // Xử lý cho album thường
+                        executor.execute(() -> {
+                            for (PhotoEntity photo : photos) {
+                                // Kiểm tra xem ảnh đã tồn tại trong album chưa
+                                int count = photoAlbumDao.countPhotoInAlbum(photo.getId(), albumId);
+                                if (count == 0) { // Nếu ảnh chưa tồn tại trong album
+                                    PhotoAlbum photoAlbum = new PhotoAlbum(photo.getId(), albumId);
+                                    photoAlbumDao.insert(photoAlbum);
+                                }
+                            }
+                        });
+                    }
+                });
             }
         });
     }
@@ -259,16 +280,16 @@ public class PhotoRepository {
     public LiveData<PhotoEntity> getPhotoById (int photoId) {
         return photoDao.getPhotoById(photoId);
     }
-    public void addPhotosToFavourite(List<PhotoEntity> selectedPhotos) {
+    public void addPhotosToFavorite(List<PhotoEntity> selectedPhotos) {
         executor.execute(() -> {
-            // Lấy hoặc tạo album "Favourite"
-            String favouriteAlbumName = "Favourite";
-            AlbumEntity favAlbum = albumDao.getAlbumByNameSync(favouriteAlbumName);
+            // Lấy hoặc tạo album "Favorite"
+            String favoriteAlbumName = "Favorite";
+            AlbumEntity favAlbum = albumDao.getAlbumByNameSync(favoriteAlbumName);
             if (favAlbum == null) {
                 favAlbum = new AlbumEntity();
-                favAlbum.setName(favouriteAlbumName);
+                favAlbum.setName(favoriteAlbumName);
                 long favAlbumId = albumDao.insert(favAlbum);
-                Log.d("FavouriteAlbum", "Tạo album Favourite ID: " + favAlbumId);
+                Log.d("FavoriteAlbum", "Tạo album Favorite ID: " + favAlbumId);
             }
 
             int albumId = favAlbum.getId();
@@ -287,7 +308,7 @@ public class PhotoRepository {
                 if (count == 0) {
                     PhotoAlbum photoAlbum = new PhotoAlbum(photoId, albumId);
                     photoAlbumDao.insert(photoAlbum);
-                    Log.d("FavouriteAlbum", "Thêm ảnh ID " + photoId + " vào album Favourite ID " + albumId);
+                    Log.d("FavoriteAlbum", "Thêm ảnh ID " + photoId + " vào album Favourite ID " + albumId);
                 }
             }
         });
@@ -299,13 +320,13 @@ public class PhotoRepository {
                 photoDao.updateFavoriteStatusDirectly(photo.getId(), isFavorite);
 
                 // Lấy hoặc tạo album "Favourite"
-                String favouriteAlbumName = "Favourite";
-                AlbumEntity favAlbum = albumDao.getAlbumByNameSync(favouriteAlbumName);
+                String favoriteAlbumName = "Favorite";
+                AlbumEntity favAlbum = albumDao.getAlbumByNameSync(favoriteAlbumName);
 
                 if (favAlbum == null) {
                     // Nếu album "Favourite" chưa tồn tại, tạo mới
                     favAlbum = new AlbumEntity();
-                    favAlbum.setName(favouriteAlbumName);
+                    favAlbum.setName(favoriteAlbumName);
                     long favAlbumId = albumDao.insert(favAlbum);
                     Log.d("FavouriteAlbum", "Tạo album Favourite ID: " + favAlbumId);
                 }
@@ -319,12 +340,12 @@ public class PhotoRepository {
                     if (count == 0) {
                         PhotoAlbum photoAlbum = new PhotoAlbum(photoId, albumId);
                         photoAlbumDao.insert(photoAlbum);
-                        Log.d("FavouriteAlbum", "Thêm ảnh ID " + photoId + " vào album Favourite ID " + albumId);
+                        Log.d("FavoriteAlbum", "Thêm ảnh ID " + photoId + " vào album Favourite ID " + albumId);
                     }
                 } else {
-                    // Xóa ảnh khỏi album "Favourite" nếu tồn tại
+                    // Xóa ảnh khỏi album "Favorite" nếu tồn tại
                     photoAlbumDao.deletePhotoFromAlbum(photoId, albumId);
-                    Log.d("FavouriteAlbum", "Xóa ảnh ID " + photoId + " khỏi album Favourite ID " + albumId);
+                    Log.d("FavoriteAlbum", "Xóa ảnh ID " + photoId + " khỏi album Favorite ID " + albumId);
                 }
             } catch (Exception e) {
                 Log.e("FavoriteUpdateError", "Lỗi khi cập nhật trạng thái yêu thích: " + e.getMessage());

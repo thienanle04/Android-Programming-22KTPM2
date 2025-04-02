@@ -40,8 +40,8 @@ public class PhotoViewModel extends AndroidViewModel {
     public LiveData<PhotoEntity> getPhotoById(int photoId) {
         return repository.getPhotoById(photoId);
     }
-    public void addPhotosToFavourite(List<PhotoEntity> selectedPhotos) {
-        repository.addPhotosToFavourite(selectedPhotos);
+    public void addPhotosToFavorite(List<PhotoEntity> selectedPhotos) {
+        repository.addPhotosToFavorite(selectedPhotos);
     }
     public void updateFavoriteStatus(PhotoEntity photo, boolean isFavorite) {
         repository.updateFavoriteStatus(photo, isFavorite);

@@ -116,15 +116,24 @@ public class AlbumRepository {
                 }
             }
 
-            // 2. Kiểm tra và tạo album "Favourite" sau khi đã load xong các album khác
-            String favouriteAlbumName = "Favourite";
-            AlbumEntity favAlbum = albumDao.getAlbumByNameSync(favouriteAlbumName);
+            // 2. Kiểm tra và tạo album "Favorite" sau khi đã load xong các album khác
+            String favoriteAlbumName = "Favorite";
+            AlbumEntity favAlbum = albumDao.getAlbumByNameSync(favoriteAlbumName);
             if (favAlbum == null) {
                 favAlbum = new AlbumEntity();
-                favAlbum.setName(favouriteAlbumName);
+                favAlbum.setName(favoriteAlbumName);
                 long favAlbumId = albumDao.insert(favAlbum);
             } else {
-                Log.d("FavouriteAlbum", "Album Favourite đã tồn tại ID: " + favAlbum.getId());
+                Log.d("FavoriteAlbum", "Album Favorite đã tồn tại ID: " + favAlbum.getId());
+            }
+            String TrashAlbumName = "Trash";
+            AlbumEntity trashAlbum = albumDao.getAlbumByNameSync(TrashAlbumName);
+            if (trashAlbum == null) {
+                trashAlbum = new AlbumEntity();
+                trashAlbum.setName(TrashAlbumName);
+                long trashAlbumId = albumDao.insert(trashAlbum);
+            } else {
+                Log.d("TrashAlbum", "Album Trash đã tồn tại ID: " + trashAlbum.getId());
             }
 
             // Lấy danh sách ảnh yêu thích
