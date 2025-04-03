@@ -13,8 +13,8 @@
         android:background="?attr/colorPrimary"
         android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
         app:title="Cài đặt"
-        style="@style/NavButton"
-        app:navigationIcon="@drawable/ic_back"
+        app:navigationIcon="@drawable/ic_arrow_back"
+        app:navigationIconTint="@android:color/white"
         app:layout_constraintTop_toTopOf="parent"/>
 
     <!-- Fragment Container for SettingsFragment -->

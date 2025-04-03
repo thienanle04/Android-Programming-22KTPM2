@@ -19,6 +19,24 @@
         app:title="Set Lock Password"
         app:summary="Set or change password to lock albums" />
 
+    <!-- Số cột trong chế độ dọc (Portrait) -->
+    <EditTextPreference
+        app:key="span_count_portrait"
+        app:title="Columns (Portrait)"
+        app:summary="Set number of columns in portrait mode"
+        app:dialogTitle="Enter number of columns (Portrait)"
+        app:defaultValue="3"
+        android:inputType="number" />
+
+    <!-- Số cột trong chế độ ngang (Landscape) -->
+    <EditTextPreference
+        app:key="span_count_landscape"
+        app:title="Columns (Landscape)"
+        app:summary="Set number of columns in landscape mode"
+        app:dialogTitle="Enter number of columns (Landscape)"
+        app:defaultValue="6"
+        android:inputType="number" />
+
     <Preference
         app:key="feedback"
         app:title="Send feedback"

@@ -2,19 +2,25 @@ package matos.csu.group3.ui.fragment;
 
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.res.Configuration;
 import android.os.Bundle;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
 import androidx.preference.PreferenceFragmentCompat;
 
 import matos.csu.group3.R;
 import matos.csu.group3.service.GoogleSignInService;
+import matos.csu.group3.ui.main.MainActivity;
+import matos.csu.group3.utils.AppConfig;
 import matos.csu.group3.utils.PasswordHelper;
 
 import android.content.Intent;
 import android.text.InputType;
+import android.util.Log;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -27,6 +33,22 @@ public class SettingsFragment extends PreferenceFragmentCompat {
     private ActivityResultLauncher<Intent> authResultLauncher;
 
     private GoogleSignInService googleSignInService;
+    public interface OnGridUpdateListener {
+        void onGridUpdateRequested();
+    }
+
+    private OnGridUpdateListener gridUpdateListener;
+
+    @Override
+    public void onAttach(@NonNull Context context) {
+        super.onAttach(context);
+        if (context instanceof OnGridUpdateListener) {
+            gridUpdateListener = (OnGridUpdateListener) context;
+        } else {
+            throw new RuntimeException(context.toString()
+                    + " must implement OnGridUpdateListener");
+        }
+    }
 
     @Override
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
@@ -46,6 +68,34 @@ public class SettingsFragment extends PreferenceFragmentCompat {
                 return true;
             });
         }
+        findPreference("span_count_portrait").setOnPreferenceChangeListener((preference, newValue) -> {
+            try {
+                int spanCount = Integer.parseInt(newValue.toString());
+                if (spanCount < 1 || spanCount > 5) {
+                    Toast.makeText(getContext(), "Please enter between 1-5", Toast.LENGTH_SHORT).show();
+                    return false;
+                }
+                updateGridLayoutIfPortrait(spanCount); // Cập nhật nếu đang ở chế độ dọc
+                return true;
+            } catch (NumberFormatException e) {
+                return false;
+            }
+        });
+
+        // Lắng nghe thay đổi của span count (Landscape)
+        findPreference("span_count_landscape").setOnPreferenceChangeListener((preference, newValue) -> {
+            try {
+                int spanCount = Integer.parseInt(newValue.toString());
+                if (spanCount < 1 || spanCount > 5) {
+                    Toast.makeText(getContext(), "Please enter between 1-5", Toast.LENGTH_SHORT).show();
+                    return false;
+                }
+                updateGridLayoutIfLandscape(spanCount); // Cập nhật nếu đang ở chế độ ngang
+                return true;
+            } catch (NumberFormatException e) {
+                return false;
+            }
+        });
         googleSignInService = new GoogleSignInService(requireContext());
 
         Preference googleSignInPref = findPreference("google_sign_in");
@@ -127,5 +177,21 @@ public class SettingsFragment extends PreferenceFragmentCompat {
         builder.setNegativeButton("Hủy", (dialog, which) -> dialog.cancel());
 
         builder.show();
+    }
+    // Kiểm tra hướng màn hình và cập nhật GridLayout
+    private void updateGridLayoutIfPortrait(int spanCount) {
+        updateGridLayout();
+        AppConfig.getInstance(getContext()).setPortraitSpanCount(spanCount);
+    }
+
+    private void updateGridLayoutIfLandscape(int spanCount) {
+        updateGridLayout();
+        AppConfig.getInstance(getContext()).setLandscapeSpanCount(spanCount);
+    }
+    private void updateGridLayout() {
+        if (gridUpdateListener != null) {
+            gridUpdateListener.onGridUpdateRequested();
+            Log.d("GridUpdate", "Update request sent");
+        }
     }
 }

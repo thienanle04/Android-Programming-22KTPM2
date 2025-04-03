@@ -54,6 +54,7 @@ import matos.csu.group3.repository.AlbumRepository;
 import matos.csu.group3.repository.PhotoRepository;
 import matos.csu.group3.ui.adapter.AlbumAdapter;
 import matos.csu.group3.ui.adapter.PhotoSelectionAdapter;
+import matos.csu.group3.utils.AppConfig;
 import matos.csu.group3.utils.PhotoCache;
 import matos.csu.group3.viewmodel.AlbumViewModel;
 
@@ -261,11 +262,8 @@ public class PhotoListOfAlbumActivity extends AppCompatActivity implements Photo
         });
         photoAdapter.setOnPhotoClickListener(this::showBigScreen);
         photoAdapter.setOnSelectionChangeListener(this::updateSelectedCount);
-        // Kiểm tra hướng màn hình
-        int orientation = getResources().getConfiguration().orientation;
 
-        // Thiết lập số cột dựa trên hướng màn hình
-        int spanCount = (orientation == Configuration.ORIENTATION_LANDSCAPE) ? 6 : 3;
+        int spanCount = AppConfig.getInstance(this).getCurrentSpanCount(this);
 
         // Khởi tạo GridLayoutManager cho album
         GridLayoutManager photoLayoutManager = new GridLayoutManager(this, spanCount);

@@ -90,6 +90,7 @@ import matos.csu.group3.ui.adapter.AlbumAdapter;
 import matos.csu.group3.ui.adapter.PhotoAdapter;
 import matos.csu.group3.ui.editor.CropAndRotateActivity;
 import matos.csu.group3.ui.fragment.HiddenAlbumBottomSheet;
+import matos.csu.group3.utils.AppConfig;
 import matos.csu.group3.utils.PasswordHelper;
 import matos.csu.group3.utils.PhotoCache;
 import matos.csu.group3.viewmodel.AlbumViewModel;
@@ -270,17 +271,33 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
     @Override
     public void onConfigurationChanged(@NonNull Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
-
+        int spanCount = AppConfig.getInstance(this).getCurrentSpanCount(this);
         // Kiểm tra hướng màn hình mới
         if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
             // Thiết bị đang ở chế độ ngang
-            Toast.makeText(this, "Landscape Mode", Toast.LENGTH_SHORT).show();
-            GridLayoutManager layoutManager = new GridLayoutManager(this, 6); // 6 ảnh mỗi hàng khi xoay ngang
+            Toast.makeText(this, "Landscape Mode" + spanCount, Toast.LENGTH_SHORT).show();
+            GridLayoutManager layoutManager = new GridLayoutManager(this, spanCount); // 6 ảnh mỗi hàng khi xoay ngang
+            layoutManager.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
+                @Override
+                public int getSpanSize(int position) {
+                    return (photoAdapter.getItemViewType(position) == PhotoAdapter.TYPE_HEADER)
+                            ? spanCount
+                            : 1;
+                }
+            });
             photoRecyclerView.setLayoutManager(layoutManager);
         } else if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT) {
             // Thiết bị đang ở chế độ dọc
-            Toast.makeText(this, "Portrait Mode", Toast.LENGTH_SHORT).show();
-            GridLayoutManager layoutManager = new GridLayoutManager(this, 3); // 3 ảnh mỗi hàng khi xoay dọc
+            Toast.makeText(this, "Portrait Mode" + spanCount, Toast.LENGTH_SHORT).show();
+            GridLayoutManager layoutManager = new GridLayoutManager(this, spanCount); // 3 ảnh mỗi hàng khi xoay dọc
+            layoutManager.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
+                @Override
+                public int getSpanSize(int position) {
+                    return (photoAdapter.getItemViewType(position) == PhotoAdapter.TYPE_HEADER)
+                            ? spanCount
+                            : 1;
+                }
+            });
             photoRecyclerView.setLayoutManager(layoutManager);
         }
     }
@@ -457,11 +474,7 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
         // Khởi tạo adapter cho album
         albumAdapter = new AlbumAdapter(new ArrayList<>(), this, albumViewModel, this);
 
-        // Kiểm tra hướng màn hình
-        int orientation = getResources().getConfiguration().orientation;
-
-        // Thiết lập số cột dựa trên hướng màn hình
-        int spanCount = (orientation == Configuration.ORIENTATION_LANDSCAPE) ? 6 : 3;
+        int spanCount = AppConfig.getInstance(this).getCurrentSpanCount(this);
 
         // Khởi tạo GridLayoutManager cho ảnh
         GridLayoutManager photoLayoutManager = new GridLayoutManager(this, spanCount);
@@ -844,6 +857,11 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
                 photo.setDateTaken(new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date(dateTakenMillis)));
                 showBigScreen(photo);
             }
+
+            // Xử lý thay đổi grid layout
+            if (intent.getBooleanExtra("UPDATE_GRID", false)) {
+                updateGridLayout();
+            }
         }
     }
 
@@ -899,5 +917,26 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
 
         // Áp dụng các thay đổi
         constraintSet.applyTo(constraintLayout);
+    }
+
+    public void updateGridLayout() {
+        runOnUiThread(() -> {
+            int spanCount = AppConfig.getInstance(this).getCurrentSpanCount(this);
+
+            GridLayoutManager layoutManager = new GridLayoutManager(this, spanCount);
+            layoutManager.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
+                @Override
+                public int getSpanSize(int position) {
+                    return (photoAdapter.getItemViewType(position) == PhotoAdapter.TYPE_HEADER)
+                            ? spanCount
+                            : 1;
+                }
+            });
+
+            photoRecyclerView.setLayoutManager(layoutManager);
+            photoAdapter.notifyDataSetChanged();
+
+            Log.d("GridUpdate", "Updated to " + spanCount + " columns");
+        });
     }
 }

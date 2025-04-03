@@ -99,7 +99,7 @@ public class AlbumAdapter extends RecyclerView.Adapter<AlbumAdapter.AlbumViewHol
                 PhotoAlbum firstPhotoAlbum = photoAlbums.get(photoAlbums.size() - 1);
 
                 photoViewModel.getPhotoById(firstPhotoAlbum.getPhotoId()).observe(lifecycleOwner, photoEntity -> {
-                    if (photoEntity != null) {
+                    if (photoEntity != null && !album.isLocked()) {
                         // Load image with Glide
                         Glide.with(holder.itemView.getContext())
                                 .load(new File(photoEntity.getFilePath()))
