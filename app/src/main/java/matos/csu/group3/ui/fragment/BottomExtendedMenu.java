@@ -67,8 +67,19 @@ public class BottomExtendedMenu extends DialogFragment {
 
         view.findViewById(R.id.btnTrash).setOnClickListener(v -> {
             Toast.makeText(getContext(), "Trash clicked", Toast.LENGTH_SHORT).show();
-            album = albumDao.getAlbumByNameSync("Trash");
-            openAlbum(album);
+            new Thread(() -> {
+                AlbumEntity trashAlbum = albumDao.getAlbumByNameSync("Trash");
+
+                // Switch back to main thread to update UI
+                requireActivity().runOnUiThread(() -> {
+                    if (trashAlbum != null) {
+                        openAlbum(trashAlbum);
+                    } else {
+                        Toast.makeText(getContext(), "Trash album not found", Toast.LENGTH_SHORT).show();
+                    }
+                    dismiss();
+                });
+            }).start();
             dismiss();
         });
 
