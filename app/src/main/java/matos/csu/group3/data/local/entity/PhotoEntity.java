@@ -1,5 +1,6 @@
 package matos.csu.group3.data.local.entity;
 
+import androidx.room.ColumnInfo;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 import java.io.Serializable;
@@ -17,10 +18,16 @@ public class PhotoEntity implements Serializable{
     private int id;
 
     private String filePath;          // File path to the photo
+
     private String name;              // Name of the photo (e.g., image name)
+
     private String dateTaken;         // Date the photo was taken
     private long dateTimestamp;
-    private String location;          // Location where the photo was taken
+
+    private String location;
+    private Double latitude;
+    private Double longitude;
+    private String address;
     private int albumId;              // ID of the album to which the photo belongs
     private boolean isFavorite;       // Flag to mark the photo as a favorite
     private long size;                // Size of the photo in bytes
@@ -209,6 +216,30 @@ public class PhotoEntity implements Serializable{
 
     public void setHidden(boolean hidden) {
         isHidden = hidden;
+    }
+
+    public Double getLatitude() {
+        return latitude;
+    }
+
+    public void setLatitude(Double latitude) {
+        this.latitude = latitude;
+    }
+
+    public Double getLongitude() {
+        return longitude;
+    }
+
+    public void setLongitude(Double longitude) {
+        this.longitude = longitude;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
     }
 }
 

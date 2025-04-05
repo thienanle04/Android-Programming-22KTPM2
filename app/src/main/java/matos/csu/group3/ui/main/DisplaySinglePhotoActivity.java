@@ -28,6 +28,7 @@ import androidx.viewpager2.widget.ViewPager2;
 
 import com.bumptech.glide.Glide;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.android.material.button.MaterialButton;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -67,6 +68,7 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
     private PhotoRepository photoRepository;
     private PhotoEntity currentPhoto;
     private AlbumRepository albumRepository;
+    private MaterialButton btnAddHashtag;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,6 +82,7 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
         txtSoloMsg = findViewById(R.id.txtSoloMsg);
         btnSoloBack = findViewById(R.id.btnSoloBack);
         btnToggleVisibility = findViewById(R.id.btnToggleVisibility);
+        btnAddHashtag = findViewById(R.id.btnAddHashtag);
 
         hashtagsRecyclerView = findViewById(R.id.recyclerViewHashtags);
         hashtagsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
@@ -135,6 +138,37 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
             }
             photoViewModel.updateHiddenStatus(currentPhoto, isHidden);
             finish();
+        });
+        btnAddHashtag.setOnClickListener(v -> {
+            if (currentPhoto != null) {
+                AlertDialog.Builder builder = new AlertDialog.Builder(DisplaySinglePhotoActivity.this);
+                builder.setTitle("Enter Hashtag");
+
+                final EditText input = new EditText(DisplaySinglePhotoActivity.this);
+                builder.setView(input);
+
+                builder.setPositiveButton("OK", (dialog, which) -> {
+                    String hashtag = input.getText().toString().trim();
+                    if (!hashtag.isEmpty()) {
+                        if (currentPhoto.getHashtags() == null) {
+                            currentPhoto.setHashtags(new Hashtags(new ArrayList<>()));
+                        }
+                        currentPhoto.getHashtags().getHashtags().add(hashtag);
+                        Log.i("DisplaySinglePhoto", "Hashtag added: " + currentPhoto.getHashtags().getHashtags());
+
+                        photoViewModel.updatePhoto(currentPhoto);
+                        updateHashtags(currentPhoto);
+
+                        Toast.makeText(this, "Hashtag added", Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(this, "Please enter a hashtag", Toast.LENGTH_SHORT).show();
+                    }
+                });
+
+                builder.setNegativeButton("CANCEL", (dialog, which) -> dialog.cancel());
+
+                builder.show();
+            }
         });
     }
     private void loadCurrentPhoto() {
@@ -324,35 +358,9 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
                     updateFavoriteIcon(item, isFavorite);
                 }
                 return true;
-            } else if (item.getItemId() == R.id.action_add_hashtag) {
+            } else if (item.getItemId() == R.id.action_details) {
                 if (currentPhoto != null) {
-                    AlertDialog.Builder builder = new AlertDialog.Builder(DisplaySinglePhotoActivity.this);
-                    builder.setTitle("Enter Hashtag");
-
-                    final EditText input = new EditText(DisplaySinglePhotoActivity.this);
-                    builder.setView(input);
-
-                    builder.setPositiveButton("OK", (dialog, which) -> {
-                        String hashtag = input.getText().toString().trim();
-                        if (!hashtag.isEmpty()) {
-                            if (currentPhoto.getHashtags() == null) {
-                                currentPhoto.setHashtags(new Hashtags(new ArrayList<>()));
-                            }
-                            currentPhoto.getHashtags().getHashtags().add(hashtag);
-                            Log.i("DisplaySinglePhoto", "Hashtag added: " + currentPhoto.getHashtags().getHashtags());
-
-                            photoViewModel.updatePhoto(currentPhoto);
-                            updateHashtags(currentPhoto);
-
-                            Toast.makeText(this, "Hashtag added", Toast.LENGTH_SHORT).show();
-                        } else {
-                            Toast.makeText(this, "Please enter a hashtag", Toast.LENGTH_SHORT).show();
-                        }
-                    });
-
-                    builder.setNegativeButton("CANCEL", (dialog, which) -> dialog.cancel());
-
-                    builder.show();
+                    Toast.makeText(this, "Address: " + currentPhoto.getLocation() + "\n " , Toast.LENGTH_SHORT).show();
                 }
                 return true;
             } else if (item.getItemId() == R.id.action_delete) {

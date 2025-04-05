@@ -79,4 +79,19 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
+    <!-- Button "Add Hashtag" (thay thế FAB) -->
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnAddHashtag"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Add Hashtag"
+        android:textColor="@android:color/white"
+        app:backgroundTint="?attr/colorPrimary"
+        app:cornerRadius="8dp"
+        app:icon="@drawable/ic_add"
+        app:iconTint="@android:color/white"
+        app:layout_constraintBottom_toTopOf="@id/bottomNavigationSinglePhotoView"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_margin="16dp" />
+
 </androidx.constraintlayout.widget.ConstraintLayout>
