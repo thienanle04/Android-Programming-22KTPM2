@@ -19,6 +19,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import androidx.lifecycle.Observer;
@@ -51,9 +52,9 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
 
     private ViewPager2 viewPager;
     private TextView txtSoloMsg;
-    private ImageButton btnSoloBack, btnEdit, btnShare, btnAddHashtag;
-    private RecyclerView recyclerViewHashtags;
+    private ImageButton btnSoloBack;
     private HashtagAdapter hashtagAdapter;
+    private RecyclerView hashtagsRecyclerView;
 
     private PhotoEntity photo;
     private PhotoDao photoDao;
@@ -79,6 +80,13 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
         txtSoloMsg = findViewById(R.id.txtSoloMsg);
         btnSoloBack = findViewById(R.id.btnSoloBack);
         btnToggleVisibility = findViewById(R.id.btnToggleVisibility);
+
+        hashtagsRecyclerView = findViewById(R.id.recyclerViewHashtags);
+        hashtagsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+
+        // Handle removal of hashtag here if needed
+        hashtagAdapter = new HashtagAdapter(new ArrayList<>(), this::removeHashtag);
+        hashtagsRecyclerView.setAdapter(hashtagAdapter);
 
         bottomNavigationView = findViewById(R.id.bottomNavigationSinglePhotoView);
 
@@ -140,6 +148,14 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
                 if (photo != null) {
                     updateCaption(photo);
                     updateFavoriteIcon(photo.isFavorite());
+                    updateHashtags(photo);
+                    Log.i("DisplaySinglePHoto", "hashtags: " +
+                            (photo.getHashtags() != null ?
+                                    (photo.getHashtags().getHashtags() != null ?
+                                            photo.getHashtags().getHashtags() : "hashtags list is null") :
+                                    "hashtags object is null"));
+                    updateHashtags(photo);
+
                     if(currentPhoto.isHidden()){
                         btnToggleVisibility.setImageResource(R.drawable.ic_eye_slash);
                     } else {
@@ -162,6 +178,14 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
                 bottomNavigationView.getMenu().setGroupCheckable(0, true, true);
             }
         });
+    }
+
+    private void updateHashtags(PhotoEntity photo) {
+        if (photo.getHashtags() != null && photo.getHashtags().getHashtags() != null) {
+            hashtagAdapter.updateHashtags(photo.getHashtags().getHashtags());
+        } else {
+            hashtagAdapter.updateHashtags(new ArrayList<>());
+        }
     }
     private boolean isInvalidPosition() {
         return photoIds == null || photoIds.isEmpty() || currentPosition < 0 || currentPosition >= photoIds.size();
@@ -300,6 +324,37 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
                     updateFavoriteIcon(item, isFavorite);
                 }
                 return true;
+            } else if (item.getItemId() == R.id.action_add_hashtag) {
+                if (currentPhoto != null) {
+                    AlertDialog.Builder builder = new AlertDialog.Builder(DisplaySinglePhotoActivity.this);
+                    builder.setTitle("Enter Hashtag");
+
+                    final EditText input = new EditText(DisplaySinglePhotoActivity.this);
+                    builder.setView(input);
+
+                    builder.setPositiveButton("OK", (dialog, which) -> {
+                        String hashtag = input.getText().toString().trim();
+                        if (!hashtag.isEmpty()) {
+                            if (currentPhoto.getHashtags() == null) {
+                                currentPhoto.setHashtags(new Hashtags(new ArrayList<>()));
+                            }
+                            currentPhoto.getHashtags().getHashtags().add(hashtag);
+                            Log.i("DisplaySinglePhoto", "Hashtag added: " + currentPhoto.getHashtags().getHashtags());
+
+                            photoViewModel.updatePhoto(currentPhoto);
+                            updateHashtags(currentPhoto);
+
+                            Toast.makeText(this, "Hashtag added", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(this, "Please enter a hashtag", Toast.LENGTH_SHORT).show();
+                        }
+                    });
+
+                    builder.setNegativeButton("CANCEL", (dialog, which) -> dialog.cancel());
+
+                    builder.show();
+                }
+                return true;
             } else if (item.getItemId() == R.id.action_delete) {
                 if (currentPhoto != null) {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !Environment.isExternalStorageManager()) {
@@ -317,8 +372,7 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
                     return true;
                 }
                 return true;
-            }
-            else if (item.getItemId() == R.id.action_delete2) {
+            } else if (item.getItemId() == R.id.action_delete2) {
                 if (currentPhoto != null) {
                     showPermanentDeleteConfirmation(currentPhoto);
                     return true;
@@ -421,5 +475,16 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
                 })
                 .setNegativeButton("Hủy", null)
                 .show();
+    }
+
+    private void removeHashtag(int position) {
+        if (currentPhoto != null && currentPhoto.getHashtags() != null) {
+            List<String> hashtags = currentPhoto.getHashtags().getHashtags();
+            if (position >= 0 && position < hashtags.size()) {
+                hashtags.remove(position);
+                hashtagAdapter.updateHashtags(hashtags);
+                photoViewModel.updatePhoto(currentPhoto);
+            }
+        }
     }
 }
