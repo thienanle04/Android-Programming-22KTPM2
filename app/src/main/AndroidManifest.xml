@@ -12,8 +12,12 @@
     <uses-permission android:name="android.permission.SET_ALARM" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION" />
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:enableOnBackInvokedCallback="true"
@@ -26,6 +30,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Group3"
         tools:targetApi="35">
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="Your Google API key" />
         <receiver android:name=".notification.NotificationReceiver"
             android:exported="false"/>
         <provider
@@ -58,7 +65,7 @@
             </intent-filter>
         </activity>
         <activity android:name=".ui.main.SearchActivity"/>
-
+        <activity android:name=".ui.main.PhotoDetailsActivity"/>
         <activity android:name=".ui.main.HiddenAlbumActivity" />
         <activity android:name=".ui.main.DisplaySinglePhotoActivity" />
         <activity

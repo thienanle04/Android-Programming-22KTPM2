@@ -19,6 +19,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.exifinterface.media.ExifInterface;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -31,6 +32,7 @@ import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -360,10 +362,15 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
                 return true;
             } else if (item.getItemId() == R.id.action_details) {
                 if (currentPhoto != null) {
-                    Toast.makeText(this, "Address: " + currentPhoto.getLocation() + "\n " , Toast.LENGTH_SHORT).show();
+                    String imagePath = currentPhoto.getFilePath();
+
+                    Intent intent = new Intent(this, PhotoDetailsActivity.class);
+                    intent.putExtra("image_path", imagePath);
+                    startActivity(intent);
                 }
                 return true;
-            } else if (item.getItemId() == R.id.action_delete) {
+            }
+            else if (item.getItemId() == R.id.action_delete) {
                 if (currentPhoto != null) {
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !Environment.isExternalStorageManager()) {
                         showManageStorageDialog();

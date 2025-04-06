@@ -92,4 +92,7 @@ dependencies {
     implementation(libs.flexbox)
     implementation(libs.work.runtime.ktx)
     implementation(libs.swiperefreshlayout)
+    implementation("com.google.android.gms:play-services-maps:18.2.0")
+    implementation("com.google.android.libraries.places:places:3.3.0")
+
 }
