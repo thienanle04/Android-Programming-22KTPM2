@@ -5,9 +5,19 @@
         android:title="Sign in with Google"
         android:summary="Tap to sign in with your Google account" />
 
-    <SwitchPreferenceCompat
-        app:key="notifications"
-        app:title="Enable message notifications"/>
+    <Preference
+        android:key="sync_photos"
+        android:title="Sync Photos to Google Drive"
+        android:summary="Upload all device photos to Google Drive"
+        android:enabled="false" />
+
+    <ListPreference
+        android:key="dark_mode"
+        android:title="Theme"
+        android:summary="Choose app theme"
+        android:entries="@array/theme_options"
+        android:entryValues="@array/theme_values"
+        android:defaultValue="system" />
 
     <Preference
         app:key="set_hide_password"
@@ -36,14 +46,4 @@
         app:dialogTitle="Enter number of columns (Landscape)"
         app:defaultValue="6"
         android:inputType="number" />
-
-    <Preference
-        app:key="feedback"
-        app:title="Send feedback"
-        app:summary="Report technical issues or suggest new features"/>
-    <Preference
-        android:key="sync_photos"
-        android:title="Sync Photos to Google Drive"
-        android:summary="Upload all device photos to Google Drive"
-        android:enabled="false" />
 </PreferenceScreen>

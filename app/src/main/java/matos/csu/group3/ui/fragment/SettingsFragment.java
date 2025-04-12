@@ -9,6 +9,8 @@ import android.os.Bundle;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatDelegate;
+import androidx.preference.ListPreference;
 import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.PreferenceManager;
 
@@ -52,6 +54,27 @@ public class SettingsFragment extends PreferenceFragmentCompat {
     @Override
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
         setPreferencesFromResource(R.xml.preferences, rootKey);
+
+        ListPreference darkModePref = findPreference("dark_mode");
+        if (darkModePref != null) {
+            darkModePref.setOnPreferenceChangeListener((preference, newValue) -> {
+                if ("dark_mode".equals(preference.getKey())) {
+                    String themeOption = newValue.toString();
+                    switch (themeOption) {
+                        case "system":
+                            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
+                            break;
+                        case "light":
+                            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+                            break;
+                        case "dark":
+                            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
+                            break;
+                    }
+                }
+                return true;
+            });
+        }
 
         googleSignInService = new GoogleSignInService(requireContext());
 
