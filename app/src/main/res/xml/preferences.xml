@@ -11,6 +11,13 @@
         android:summary="Upload all device photos to Google Drive"
         android:enabled="false" />
 
+    <Preference
+        android:key="logout"
+        android:title="Đăng xuất"
+        android:summary="Đăng xuất khỏi tài khoản Google"
+        android:defaultValue="false"
+        android:enabled="false" />
+
     <ListPreference
         android:key="dark_mode"
         android:title="Theme"

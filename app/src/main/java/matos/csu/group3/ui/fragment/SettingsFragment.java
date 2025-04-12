@@ -148,6 +148,21 @@ public class SettingsFragment extends PreferenceFragmentCompat {
             });
         }
 
+        Preference logout = findPreference("logout");
+        if (logout != null) {
+            logout.setOnPreferenceClickListener(preference -> {
+                SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
+                SharedPreferences.Editor editor = prefs.edit();
+
+                editor.putBoolean("is_logged_in", false);
+                editor.apply();
+
+                updateLoginStatus(false);
+                Toast.makeText(getContext(), "Logged out successfully", Toast.LENGTH_LONG).show();
+                return true;
+            });
+        }
+
         // Initialize login status and sync button state
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
         boolean isLoggedIn = prefs.getBoolean("is_logged_in", false);
@@ -177,9 +192,10 @@ public class SettingsFragment extends PreferenceFragmentCompat {
         );
     }
 
-    private void updateLoginStatus(boolean isLoggedIn) {
+    public void updateLoginStatus(boolean isLoggedIn) {
         Preference googleSignInPref = findPreference("google_sign_in");
         Preference syncPhotosPref = findPreference("sync_photos");
+        Preference logout = findPreference("logout");
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
 
         if (googleSignInPref != null) {
@@ -193,7 +209,12 @@ public class SettingsFragment extends PreferenceFragmentCompat {
 
         if (syncPhotosPref != null) {
             syncPhotosPref.setEnabled(isLoggedIn);
-            syncPhotosPref.setSummary(isLoggedIn ? "Upload all device photos to Google Drive" : "Sign in to enable photo sync");
+            syncPhotosPref.setSummary(isLoggedIn ? "Tải tất cả ảnh lên Google Drive" : "Chưa đăng nhập");
+        }
+
+        if (logout != null) {
+            logout.setEnabled(isLoggedIn);
+            logout.setSummary(isLoggedIn ? "Đăng xuất khỏi tài khoản Google" : "Chưa đăng nhập");
         }
     }
 
