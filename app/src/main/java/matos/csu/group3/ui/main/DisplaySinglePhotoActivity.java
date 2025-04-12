@@ -28,6 +28,7 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.viewpager2.widget.ViewPager2;
 
 import com.bumptech.glide.Glide;
+import com.google.android.flexbox.FlexboxLayoutManager;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
 
@@ -87,7 +88,8 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
         btnAddHashtag = findViewById(R.id.btnAddHashtag);
 
         hashtagsRecyclerView = findViewById(R.id.recyclerViewHashtags);
-        hashtagsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        FlexboxLayoutManager flexboxLayoutManager = new FlexboxLayoutManager(this);
+        hashtagsRecyclerView.setLayoutManager(flexboxLayoutManager);
 
         // Handle removal of hashtag here if needed
         hashtagAdapter = new HashtagAdapter(new ArrayList<>(), this::removeHashtag);
@@ -155,7 +157,8 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
                         if (currentPhoto.getHashtags() == null) {
                             currentPhoto.setHashtags(new Hashtags(new ArrayList<>()));
                         }
-                        currentPhoto.getHashtags().getHashtags().add(hashtag);
+                        List<String> hashtagList = currentPhoto.getHashtags().getHashtags();
+                        hashtagList.add(hashtag);
                         Log.i("DisplaySinglePhoto", "Hashtag added: " + currentPhoto.getHashtags().getHashtags());
 
                         photoViewModel.updatePhoto(currentPhoto);
@@ -496,6 +499,7 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
         if (currentPhoto != null && currentPhoto.getHashtags() != null) {
             List<String> hashtags = currentPhoto.getHashtags().getHashtags();
             if (position >= 0 && position < hashtags.size()) {
+                Log.i("Remove hashtags", "Removing hashtag: " + hashtags.get(position));
                 hashtags.remove(position);
                 hashtagAdapter.updateHashtags(hashtags);
                 photoViewModel.updatePhoto(currentPhoto);

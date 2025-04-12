@@ -1,27 +1,25 @@
 package matos.csu.group3.data.local.entity;
 
-import androidx.room.TypeConverter;
-
 import java.io.Serializable;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 
 public class Hashtags implements Serializable {
-    private List<String> Hashtags;
+    private List<String> hashtags;
 
     public Hashtags() {
-        this.Hashtags = null;
+        this.hashtags = new ArrayList<>();
     }
+
     public Hashtags(List<String> hashtags) {
-        this.Hashtags = hashtags;
+        this.hashtags = hashtags != null ? new ArrayList<>(hashtags) : new ArrayList<>(); // Ensure a mutable list
     }
 
     public List<String> getHashtags() {
-        return Hashtags;
+        return hashtags;
     }
 
     public void setHashtags(List<String> hashtags) {
-        this.Hashtags = hashtags;
+        this.hashtags = hashtags != null ? new ArrayList<>(hashtags) : new ArrayList<>();
     }
 }
-
