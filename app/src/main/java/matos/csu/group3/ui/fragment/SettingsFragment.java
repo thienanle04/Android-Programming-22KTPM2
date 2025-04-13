@@ -20,6 +20,7 @@ import matos.csu.group3.utils.PasswordHelper;
 import android.content.Intent;
 import android.text.InputType;
 import android.util.Log;
+import android.view.View;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -178,14 +179,45 @@ public class SettingsFragment extends PreferenceFragmentCompat {
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
         builder.setTitle("Thiết lập mật khẩu album ẩn");
 
-        final EditText input = new EditText(getContext());
-        input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
-        builder.setView(input);
+        // Inflate custom layout
+        View view = getLayoutInflater().inflate(R.layout.dialog_input, null);
+        EditText oldPasswordInput = view.findViewById(R.id.edit_text);
+        oldPasswordInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        oldPasswordInput.setHint("Nhập mật khẩu cũ");
+
+        builder.setView(view);
+
+        builder.setPositiveButton("Tiếp tục", (dialog, which) -> {
+            String oldPassword = oldPasswordInput.getText().toString();
+            if (PasswordHelper.checkHidePassword(getContext(), oldPassword)) {
+                showNewHidePasswordDialog();
+            } else {
+                Toast.makeText(getContext(), "Mật khẩu cũ không đúng", Toast.LENGTH_SHORT).show();
+            }
+        });
+        builder.setNegativeButton("Hủy", (dialog, which) -> dialog.cancel());
+
+        builder.show();
+    }
+
+    private void showNewHidePasswordDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+        builder.setTitle("Nhập mật khẩu mới");
+
+        View view = getLayoutInflater().inflate(R.layout.dialog_input, null);
+        EditText newPasswordInput = view.findViewById(R.id.edit_text);
+        newPasswordInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        newPasswordInput.setHint("Nhập mật khẩu mới");
+
+        builder.setView(view);
 
         builder.setPositiveButton("Lưu", (dialog, which) -> {
-            String password = input.getText().toString();
-            if (!password.isEmpty()) {
-                PasswordHelper.setHidePassword(getContext(), password);
+            String newPassword = newPasswordInput.getText().toString();
+            if (!newPassword.isEmpty()) {
+                PasswordHelper.setHidePassword(getContext(), newPassword);
+                Toast.makeText(getContext(), "Đã thay đổi mật khẩu album ẩn", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(getContext(), "Mật khẩu không được để trống", Toast.LENGTH_SHORT).show();
             }
         });
         builder.setNegativeButton("Hủy", (dialog, which) -> dialog.cancel());
@@ -197,14 +229,44 @@ public class SettingsFragment extends PreferenceFragmentCompat {
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
         builder.setTitle("Thiết lập mật khẩu khóa album");
 
-        final EditText input = new EditText(getContext());
-        input.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
-        builder.setView(input);
+        View view = getLayoutInflater().inflate(R.layout.dialog_input, null);
+        EditText oldPasswordInput = view.findViewById(R.id.edit_text);
+        oldPasswordInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        oldPasswordInput.setHint("Nhập mật khẩu cũ");
+
+        builder.setView(view);
+
+        builder.setPositiveButton("Tiếp tục", (dialog, which) -> {
+            String oldPassword = oldPasswordInput.getText().toString();
+            if (PasswordHelper.checkLockPassword(getContext(), oldPassword)) {
+                showNewLockPasswordDialog();
+            } else {
+                Toast.makeText(getContext(), "Mật khẩu cũ không đúng", Toast.LENGTH_SHORT).show();
+            }
+        });
+        builder.setNegativeButton("Hủy", (dialog, which) -> dialog.cancel());
+
+        builder.show();
+    }
+
+    private void showNewLockPasswordDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+        builder.setTitle("Nhập mật khẩu mới");
+
+        View view = getLayoutInflater().inflate(R.layout.dialog_input, null);
+        EditText newPasswordInput = view.findViewById(R.id.edit_text);
+        newPasswordInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        newPasswordInput.setHint("Nhập mật khẩu mới");
+
+        builder.setView(view);
 
         builder.setPositiveButton("Lưu", (dialog, which) -> {
-            String password = input.getText().toString();
-            if (!password.isEmpty()) {
-                PasswordHelper.setLockPassword(getContext(), password);
+            String newPassword = newPasswordInput.getText().toString();
+            if (!newPassword.isEmpty()) {
+                PasswordHelper.setLockPassword(getContext(), newPassword);
+                Toast.makeText(getContext(), "Đã thay đổi mật khẩu khóa album", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(getContext(), "Mật khẩu không được để trống", Toast.LENGTH_SHORT).show();
             }
         });
         builder.setNegativeButton("Hủy", (dialog, which) -> dialog.cancel());

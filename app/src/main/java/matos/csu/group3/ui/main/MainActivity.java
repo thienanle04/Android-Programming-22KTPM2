@@ -416,7 +416,7 @@ public class MainActivity extends AppCompatActivity implements PhotoAdapter.OnIt
                 }
 
                 // Khoảng cách tối thiểu để kích hoạt
-                float MIN_DISTANCE = 100;
+                float MIN_DISTANCE = (float) (photoRecyclerView.getHeight() * 0.7);
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_DOWN:
                         startY = event.getY();
