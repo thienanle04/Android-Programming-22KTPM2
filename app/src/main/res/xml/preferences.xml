@@ -2,48 +2,55 @@
     xmlns:android="http://schemas.android.com/apk/res/android">
     <Preference
         android:key="google_sign_in"
-        android:title="Sign in with Google"
-        android:summary="Tap to sign in with your Google account" />
+        android:title="Đăng nhập với Google"
+        android:summary="Chạm để đăng nhập với Google" />
 
-    <SwitchPreferenceCompat
-        app:key="notifications"
-        app:title="Enable message notifications"/>
+    <Preference
+        android:key="sync_photos"
+        android:title="Tải ảnh lên Google Drive"
+        android:summary="Tải tất cả ảnh lên Google Drive"
+        android:enabled="false" />
+
+    <Preference
+        android:key="logout"
+        android:title="Đăng xuất"
+        android:summary="Đăng xuất khỏi tài khoản Google"
+        android:defaultValue="false"
+        android:enabled="false" />
+
+    <ListPreference
+        android:key="dark_mode"
+        android:title="Chế độ màu"
+        android:summary="Bấm để chọn"
+        android:entries="@array/theme_options"
+        android:entryValues="@array/theme_values"
+        android:defaultValue="system" />
 
     <Preference
         app:key="set_hide_password"
-        app:title="Set Hidden Album Password"
-        app:summary="Set or change password for hidden albums" />
+        app:title="Đặt mật khẩu cho album ẩn"
+        app:summary="Đặt hoặc đổi mật khẩu" />
 
     <Preference
         app:key="set_lock_password"
-        app:title="Set Lock Password"
-        app:summary="Set or change password to lock albums" />
+        app:title="Đặt mật khẩu cho album khóa"
+        app:summary="Đặt hoặc đổi mật khẩu" />" />
 
     <!-- Số cột trong chế độ dọc (Portrait) -->
     <EditTextPreference
         app:key="span_count_portrait"
-        app:title="Columns (Portrait)"
-        app:summary="Set number of columns in portrait mode"
-        app:dialogTitle="Enter number of columns (Portrait)"
+        app:title="Số ảnh (chế độ dọc)"
+        app:summary="Đặt số ảnh hiển thị trong chế độ dọc"
+        app:dialogTitle="Nhập số ảnh (chế độ dọc)"
         app:defaultValue="3"
         android:inputType="number" />
 
     <!-- Số cột trong chế độ ngang (Landscape) -->
     <EditTextPreference
         app:key="span_count_landscape"
-        app:title="Columns (Landscape)"
-        app:summary="Set number of columns in landscape mode"
-        app:dialogTitle="Enter number of columns (Landscape)"
+        app:title="Số ảnh (chế độ ngang)"
+        app:summary="Đặt số ảnh hiển thị trong chế độ ngang"
+        app:dialogTitle="Nhập số ảnh (chế độ ngang)"
         app:defaultValue="6"
         android:inputType="number" />
-
-    <Preference
-        app:key="feedback"
-        app:title="Send feedback"
-        app:summary="Report technical issues or suggest new features"/>
-    <Preference
-        android:key="sync_photos"
-        android:title="Sync Photos to Google Drive"
-        android:summary="Upload all device photos to Google Drive"
-        android:enabled="false" />
 </PreferenceScreen>

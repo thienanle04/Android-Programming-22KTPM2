@@ -3,4 +3,17 @@
     <string name="photo_name">Photo Name</string>
     <string name="photo_image">Photo Image</string>
     <string name="crop">Crop</string>
+
+    <string-array name="theme_options">
+        <item>System default</item>
+        <item>Light</item>
+        <item>Dark</item>
+    </string-array>
+
+    <string-array name="theme_values">
+        <item>system</item>
+        <item>light</item>
+        <item>dark</item>
+    </string-array>
+
 </resources>

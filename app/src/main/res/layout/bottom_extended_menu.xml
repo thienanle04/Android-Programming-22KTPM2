@@ -44,8 +44,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Favorites"
-                    android:textSize="13sp"
-                    android:textColor="@color/black"/>
+                    android:textSize="13sp" />
             </LinearLayout>
 
             <!-- Location -->
@@ -68,8 +67,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Location"
-                    android:textSize="13sp"
-                    android:textColor="@color/black"/>
+                    android:textSize="13sp" />
             </LinearLayout>
 
             <!-- Trash -->
@@ -92,8 +90,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Trash"
-                    android:textSize="13sp"
-                    android:textColor="@color/black"/>
+                    android:textSize="13sp" />
             </LinearLayout>
 
             <!-- Settings -->
@@ -116,8 +113,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Settings"
-                    android:textSize="13sp"
-                    android:textColor="@color/black"/>
+                    android:textSize="13sp" />
             </LinearLayout>
 
         </LinearLayout>

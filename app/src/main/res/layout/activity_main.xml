@@ -31,22 +31,22 @@
             app:tint="?attr/colorOnBackground" />
 
         <!-- Icon Cloud -->
-        <androidx.appcompat.widget.AppCompatImageView
-            android:id="@+id/cloud_icon"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:layout_marginStart="8dp"
-            app:tint="?attr/colorOnBackground"
-            android:src="@drawable/ic_cloud" /> <!-- Sử dụng icon cloud hoặc tải icon từ thư viện -->
+<!--        <androidx.appcompat.widget.AppCompatImageView-->
+<!--            android:id="@+id/cloud_icon"-->
+<!--            android:layout_width="24dp"-->
+<!--            android:layout_height="24dp"-->
+<!--            android:layout_marginStart="8dp"-->
+<!--            app:tint="?attr/colorOnBackground"-->
+<!--            android:src="@drawable/ic_cloud" /> &lt;!&ndash; Sử dụng icon cloud hoặc tải icon từ thư viện &ndash;&gt;-->
 
         <!-- Nút 3 chấm (Menu Icon) -->
-        <androidx.appcompat.widget.AppCompatImageView
-            android:id="@+id/menu_icon"
-            android:layout_width="24dp"
-            android:layout_height="24dp"
-            android:layout_marginStart="8dp"
-            app:tint="?attr/colorOnBackground"
-            android:src="@drawable/ic_menu" /> <!-- Sử dụng icon 3 chấm hoặc tải icon từ thư viện -->
+<!--        <androidx.appcompat.widget.AppCompatImageView-->
+<!--            android:id="@+id/menu_icon"-->
+<!--            android:layout_width="24dp"-->
+<!--            android:layout_height="24dp"-->
+<!--            android:layout_marginStart="8dp"-->
+<!--            app:tint="?attr/colorOnBackground"-->
+<!--            android:src="@drawable/ic_menu" /> &lt;!&ndash; Sử dụng icon 3 chấm hoặc tải icon từ thư viện &ndash;&gt;-->
     </LinearLayout>
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/addAlbumButton"

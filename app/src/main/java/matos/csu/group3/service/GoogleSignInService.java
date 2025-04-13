@@ -1,6 +1,7 @@
 package matos.csu.group3.service;
 
 import matos.csu.group3.BuildConfig;
+import matos.csu.group3.ui.fragment.SettingsFragment;
 
 import android.content.ContentResolver;
 import android.content.ContentUris;
@@ -16,6 +17,7 @@ import android.util.Log;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.preference.PreferenceManager;
 
 import net.openid.appauth.AuthState;
@@ -92,6 +94,7 @@ public class GoogleSignInService {
                 String accessToken = response.accessToken;
 
                 if (accessToken != null) {
+                    callback.onSuccess(response);
                     getUserInfoAsync(accessToken);
                 } else {
                     callback.onError(new Exception("Access token is null"));

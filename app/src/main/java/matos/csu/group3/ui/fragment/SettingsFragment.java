@@ -9,6 +9,8 @@ import android.os.Bundle;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatDelegate;
+import androidx.preference.ListPreference;
 import androidx.preference.PreferenceFragmentCompat;
 import androidx.preference.PreferenceManager;
 
@@ -53,6 +55,27 @@ public class SettingsFragment extends PreferenceFragmentCompat {
     @Override
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
         setPreferencesFromResource(R.xml.preferences, rootKey);
+
+        ListPreference darkModePref = findPreference("dark_mode");
+        if (darkModePref != null) {
+            darkModePref.setOnPreferenceChangeListener((preference, newValue) -> {
+                if ("dark_mode".equals(preference.getKey())) {
+                    String themeOption = newValue.toString();
+                    switch (themeOption) {
+                        case "system":
+                            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM);
+                            break;
+                        case "light":
+                            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+                            break;
+                        case "dark":
+                            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
+                            break;
+                    }
+                }
+                return true;
+            });
+        }
 
         googleSignInService = new GoogleSignInService(requireContext());
 
@@ -126,6 +149,21 @@ public class SettingsFragment extends PreferenceFragmentCompat {
             });
         }
 
+        Preference logout = findPreference("logout");
+        if (logout != null) {
+            logout.setOnPreferenceClickListener(preference -> {
+                SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
+                SharedPreferences.Editor editor = prefs.edit();
+
+                editor.putBoolean("is_logged_in", false);
+                editor.apply();
+
+                updateLoginStatus(false);
+                Toast.makeText(getContext(), "Logged out successfully", Toast.LENGTH_LONG).show();
+                return true;
+            });
+        }
+
         // Initialize login status and sync button state
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
         boolean isLoggedIn = prefs.getBoolean("is_logged_in", false);
@@ -155,9 +193,10 @@ public class SettingsFragment extends PreferenceFragmentCompat {
         );
     }
 
-    private void updateLoginStatus(boolean isLoggedIn) {
+    public void updateLoginStatus(boolean isLoggedIn) {
         Preference googleSignInPref = findPreference("google_sign_in");
         Preference syncPhotosPref = findPreference("sync_photos");
+        Preference logout = findPreference("logout");
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
 
         if (googleSignInPref != null) {
@@ -171,7 +210,12 @@ public class SettingsFragment extends PreferenceFragmentCompat {
 
         if (syncPhotosPref != null) {
             syncPhotosPref.setEnabled(isLoggedIn);
-            syncPhotosPref.setSummary(isLoggedIn ? "Upload all device photos to Google Drive" : "Sign in to enable photo sync");
+            syncPhotosPref.setSummary(isLoggedIn ? "Tải tất cả ảnh lên Google Drive" : "Chưa đăng nhập");
+        }
+
+        if (logout != null) {
+            logout.setEnabled(isLoggedIn);
+            logout.setSummary(isLoggedIn ? "Đăng xuất khỏi tài khoản Google" : "Chưa đăng nhập");
         }
     }
 
