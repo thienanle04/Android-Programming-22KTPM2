@@ -1,6 +1,7 @@
 package matos.csu.group3.ui.main;
 
 import android.Manifest;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.BitmapFactory;
 import android.location.Address;
@@ -42,6 +43,8 @@ public class PhotoDetailsActivity extends AppCompatActivity {
     private static final int REQUEST_MEDIA_LOCATION_PERMISSION = 101;
     private String imagePath;
     private TextView tvExifData;
+    private double lat;
+    private double lng;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -241,8 +244,8 @@ public class PhotoDetailsActivity extends AppCompatActivity {
         if (latitude != null && longitude != null) {
             try {
                 // Chuyển đổi tọa độ GPS sang dạng số
-                double lat = convertGpsToDecimal(latitude, latitudeRef);
-                double lng = convertGpsToDecimal(longitude, longitudeRef);
+                lat = convertGpsToDecimal(latitude, latitudeRef);
+                lng = convertGpsToDecimal(longitude, longitudeRef);
 
                 // Lấy địa chỉ từ tọa độ
                 String address = getAddressFromLocation(lat, lng);
@@ -318,6 +321,7 @@ public class PhotoDetailsActivity extends AppCompatActivity {
     private void showOnMap(double latitude, double longitude) {
         // Kiểm tra nếu mapComponent đã được khởi tạo
         View mapContainer = findViewById(R.id.mapContainer);
+
         if (mapContainer == null) {
             Log.e("GPS", "Map container not found");
             return;
@@ -329,7 +333,12 @@ public class PhotoDetailsActivity extends AppCompatActivity {
             mapComponent = new LocationMapComponent(this);
             ((ViewGroup) mapContainer).addView(mapComponent);
         }
-
+        mapComponent.setOnMapClickListener(v -> {
+            Intent intent = new Intent(this, MapActivity.class);
+            intent.putExtra("LATITUDE", lat);
+            intent.putExtra("LONGITUDE", lng);
+            startActivity(intent);
+        });
         // Tạo địa chỉ từ tọa độ (có thể sử dụng Geocoder nếu cần)
         String address = String.format(Locale.getDefault(),
                 "Lat: %.6f, Long: %.6f", latitude, longitude);
