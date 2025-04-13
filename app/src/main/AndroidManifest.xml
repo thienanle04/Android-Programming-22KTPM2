@@ -32,7 +32,7 @@
         tools:targetApi="35">
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="Your Google API key" />
+            android:value="AIzaSyCkfUnk3ddTN0_QuASJf6OTen2BP7Fb_a8" />
         <receiver android:name=".notification.NotificationReceiver"
             android:exported="false"/>
         <provider
