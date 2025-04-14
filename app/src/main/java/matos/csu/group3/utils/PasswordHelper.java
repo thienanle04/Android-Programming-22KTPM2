@@ -16,7 +16,7 @@ public class PasswordHelper {
 
     public static boolean checkLockPassword(Context context, String inputPassword) {
         SharedPreferences prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
-        String savedPass = prefs.getString(LOCK_PASS_KEY, "");
+        String savedPass = prefs.getString(LOCK_PASS_KEY, "123");
         return savedPass.equals(inputPassword);
     }
 
@@ -38,7 +38,7 @@ public class PasswordHelper {
 
     public static boolean checkHidePassword(Context context, String inputPassword) {
         SharedPreferences prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
-        String savedPass = prefs.getString(HIDE_PASS_KEY, "");
+        String savedPass = prefs.getString(HIDE_PASS_KEY, "123");
         return savedPass.equals(inputPassword);
     }
 

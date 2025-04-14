@@ -256,7 +256,6 @@ public class PhotoListOfAlbumActivity extends AppCompatActivity implements Photo
         photoAdapter.setOnLongPressListener(() -> {
             topNavigationSelectionBar.setVisibility(View.VISIBLE); // Hiển thị top navigation bar
             topNavigationBar.setVisibility(View.GONE);
-            updateRecyclerViewConstraints(true);
             updateSelectedCount();
             bottomNavigationView.setVisibility(View.VISIBLE); // Hiển thị BottomNavigationView
         });
