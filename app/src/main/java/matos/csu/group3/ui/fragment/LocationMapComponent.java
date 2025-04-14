@@ -21,12 +21,16 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import matos.csu.group3.R;
 
 public class LocationMapComponent extends RelativeLayout implements OnMapReadyCallback {
-
     private MapView mapView;
     private TextView tvLocationAddress;
     private GoogleMap googleMap;
     private String address;
     private LatLng location;
+    private OnMapClickListener onMapClickListener;
+
+    public interface OnMapClickListener {
+        void onMapClicked(LatLng location);
+    }
 
     public LocationMapComponent(Context context) {
         super(context);
@@ -48,6 +52,10 @@ public class LocationMapComponent extends RelativeLayout implements OnMapReadyCa
         mapView.getMapAsync(this);
     }
 
+    public void setOnMapClickListener(OnMapClickListener listener) {
+        this.onMapClickListener = listener;
+    }
+
     public void setLocation(String address, LatLng location) {
         this.address = address;
         this.location = location;
@@ -57,7 +65,9 @@ public class LocationMapComponent extends RelativeLayout implements OnMapReadyCa
     private void updateMap() {
         if (googleMap != null && location != null) {
             googleMap.clear();
-            googleMap.addMarker(new MarkerOptions().position(location).title("Vị trí chụp ảnh"));
+            googleMap.addMarker(new MarkerOptions()
+                    .position(location)
+                    .title("Vị trí chụp ảnh"));
             googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(location, 15f));
             tvLocationAddress.setText(address);
         }
@@ -67,12 +77,21 @@ public class LocationMapComponent extends RelativeLayout implements OnMapReadyCa
     public void onMapReady(@NonNull GoogleMap googleMap) {
         this.googleMap = googleMap;
         googleMap.getUiSettings().setZoomControlsEnabled(true);
+        googleMap.getUiSettings().setAllGesturesEnabled(true);
+
+        // Thêm sự kiện click cho map
+        googleMap.setOnMapClickListener(latLng -> {
+            if (onMapClickListener != null) {
+                onMapClickListener.onMapClicked(latLng);
+            }
+        });
+
         if (location != null) {
             updateMap();
         }
     }
 
-    // Các phương thức lifecycle cho MapView
+    // Các phương thức lifecycle
     public void onResume() {
         mapView.onResume();
     }

@@ -68,6 +68,7 @@
         <activity android:name=".ui.main.PhotoDetailsActivity"/>
         <activity android:name=".ui.main.HiddenAlbumActivity" />
         <activity android:name=".ui.main.DisplaySinglePhotoActivity" />
+        <activity android:name=".ui.main.MapActivity"/>
         <activity
             android:name="com.yalantis.ucrop.UCropActivity"
             android:screenOrientation="portrait" />
