@@ -147,8 +147,8 @@ public class CropAndRotateActivity extends AppCompatActivity {
                 File publicFile = new File(publicDir, "Memoria_" + originalFile.getName());
 
                 FileInputStream inStream = new FileInputStream(originalFile);
-                FileOutputStream outStream = new FileOutputStream(originalFile);
-                byte[] buffer = new byte[1024];
+                FileOutputStream outStream = new FileOutputStream(publicFile);
+                byte[] buffer = new byte[8192];
                 int length;
                 while ((length = inStream.read(buffer)) > 0) {
                     outStream.write(buffer, 0, length);
