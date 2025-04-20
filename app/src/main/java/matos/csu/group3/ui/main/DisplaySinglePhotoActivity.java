@@ -135,7 +135,7 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
             photoIds = PhotoCache.getInstance().getPhotoListIds();
             currentPosition = intent.getIntExtra("currentPosition", 0);
             isTrashAlbum = intent.getBooleanExtra("isTrashAlbum", false);
-            loadCurrentPhoto();
+//            loadCurrentPhoto();
         }
 
         photoPagerAdapter = new PhotoPagerAdapter(photoIds, photoViewModel, this);
@@ -210,7 +210,7 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
     }
     private void loadCurrentPhoto() {
         if (isInvalidPosition()) return;
-
+        Toast.makeText(this, "Cur Pos: " + currentPosition, Toast.LENGTH_SHORT).show();
         photoViewModel.getPhotoById(photoIds.get(currentPosition)).removeObservers(this);
         photoViewModel.getPhotoById(photoIds.get(currentPosition)).observe(this, new Observer<PhotoEntity>() {
             @Override
