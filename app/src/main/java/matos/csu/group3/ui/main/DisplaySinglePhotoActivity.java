@@ -32,18 +32,32 @@ import com.google.android.flexbox.FlexboxLayoutManager;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
 
+import org.json.JSONObject;
+
 import java.io.File;
 import java.io.IOException;
+import java.net.ConnectException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.InterfaceAddress;
+import java.net.NetworkInterface;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.List;
 
+import javax.net.ssl.SSLHandshakeException;
+
 import matos.csu.group3.R;
+import matos.csu.group3.data.api.AuthRequest;
 import matos.csu.group3.data.api.PhotoUploadApi;
 import matos.csu.group3.data.local.AppDatabase;
 import matos.csu.group3.data.local.dao.PhotoDao;
 import matos.csu.group3.data.local.entity.Hashtags;
 import matos.csu.group3.service.ApiClient;
+import matos.csu.group3.service.AuthService;
 import matos.csu.group3.ui.adapter.HashtagAdapter;
 import matos.csu.group3.data.local.entity.AlbumEntity;
 import matos.csu.group3.data.local.entity.PhotoEntity;
@@ -525,7 +539,112 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
         }
     }
 
-    private void sendPhotoToApi(PhotoEntity photoEntity) {
+//    private void sendPhotoToApi(PhotoEntity photoEntity) {
+//        File photoFile = new File(photoEntity.getFilePath());
+//
+//        if (!photoFile.exists()) {
+//            Toast.makeText(this, "File " + photoFile + " không tồn tại", Toast.LENGTH_SHORT).show();
+//            return;
+//        }
+//
+//        PhotoUploadApi api = ApiClient.getRetrofitInstance().create(PhotoUploadApi.class);
+//
+//        RequestBody requestFile = RequestBody.create(photoFile, MediaType.parse("image/*"));
+//        MultipartBody.Part body = MultipartBody.Part.createFormData("image", photoFile.getName(), requestFile);
+//
+//        Call<List<String>> call = api.uploadPhoto(body);
+//        call.enqueue(new Callback<>() {
+//            @Override
+//            public void onResponse(Call<List<String>> call, Response<List<String>> response) {
+//                if (response.isSuccessful() && response.body() != null) {
+//                    Log.i("SendPhotoToAPI", "Upload thành công");
+//                    Log.i("SendPhotoToAPI", "Body: " + response.body());
+//
+//                    List<String> suggestedTags = response.body();
+//                    Log.i("SendPhotoToAPI", "Tags: " + suggestedTags);
+//                    runOnUiThread(() -> {
+//                        if (currentPhoto.getHashtags() == null) {
+//                            currentPhoto.setHashtags(new Hashtags(new ArrayList<>()));
+//                        }
+//
+//                        List<String> userTags = currentPhoto.getHashtags().getHashtags();
+//                        for (String tag : suggestedTags) {
+//                            if (!userTags.contains(tag)) {
+//                                userTags.add(tag);
+//                            }
+//                        }
+//
+//                        photoViewModel.updatePhoto(currentPhoto);
+//                        updateHashtags(currentPhoto);
+//                    });
+//                } else {
+//                    Log.i("SendPhotoToAPI", "Upload thất bại: " + response.toString());
+//                    Toast.makeText(DisplaySinglePhotoActivity.this, "Không nhận được hashtag gọi ý", Toast.LENGTH_SHORT).show();
+//                }
+//            }
+//
+//            public void onFailure(Call<List<String>> call, Throwable t) {
+//                Log.i("SendPhotoToAPI", "Upload thất bại" + t.getMessage());
+//                Toast.makeText(DisplaySinglePhotoActivity.this, "Không nhận được kết nối từ server", Toast.LENGTH_SHORT).show();
+//            }
+//        });
+//
+//
+//    }
+interface ServerDiscoveryCallback {
+    void onServerDiscovered(String baseUrl, String port);
+    void onDiscoveryFailed(String error);
+}
+
+private void sendPhotoToApi(PhotoEntity photoEntity) {
+    // First check if API client is initialized
+    if (ApiClient.getJwtToken().isEmpty()) {
+        Toast.makeText(this, "Đang xử lí...", Toast.LENGTH_SHORT).show();
+        initializeApiClientAndUploadPhoto(photoEntity);
+        return;
+    }
+
+    uploadPhotoToApi(photoEntity);
+}
+
+    private void initializeApiClientAndUploadPhoto(PhotoEntity photoEntity) {
+        // Step 1: Broadcast UDP to discover server (pseudo-code)
+        discoverServerViaUdp(new ServerDiscoveryCallback() {
+            @Override
+            public void onServerDiscovered(String baseUrl, String port) {
+                // Step 2: Get JWT token using discovered server details
+                AuthService authService = ApiClient.getAuthService(baseUrl, port);
+                AuthRequest authRequest = new AuthRequest("client", "1234");
+
+                authService.getToken(authRequest).enqueue(new Callback<String>() {
+                    @Override
+                    public void onResponse(Call<String> call, Response<String> response) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            ApiClient.initialize(baseUrl, port, response.body());
+                            uploadPhotoToApi(photoEntity);
+                        } else {
+                            Log.i("SendPhotoToAPI", "Authentication failed:" + response.toString());
+                            runOnUiThread(() -> Toast.makeText(DisplaySinglePhotoActivity.this, "Authentication failed", Toast.LENGTH_LONG).show());
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<String> call, Throwable t) {
+                        Log.e("NetworkError", t.getMessage(), t);
+                        runOnUiThread(() -> Toast.makeText(DisplaySinglePhotoActivity.this, "Network error", Toast.LENGTH_LONG).show());
+                    }
+                });
+            }
+
+            @Override
+            public void onDiscoveryFailed(String error) {
+                runOnUiThread(() -> Toast.makeText(DisplaySinglePhotoActivity.this,
+                        "Không tìm thấy server: " + error, Toast.LENGTH_SHORT).show());
+            }
+        });
+    }
+
+    private void uploadPhotoToApi(PhotoEntity photoEntity) {
         File photoFile = new File(photoEntity.getFilePath());
 
         if (!photoFile.exists()) {
@@ -533,48 +652,120 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
             return;
         }
 
-        PhotoUploadApi api = ApiClient.getRetrofitInstance().create(PhotoUploadApi.class);
+        try {
+            PhotoUploadApi api = ApiClient.getRetrofitInstance().create(PhotoUploadApi.class);
+            RequestBody requestFile = RequestBody.create(photoFile, MediaType.parse("image/*"));
+            MultipartBody.Part body = MultipartBody.Part.createFormData("image", photoFile.getName(), requestFile);
 
-        RequestBody requestFile = RequestBody.create(photoFile, MediaType.parse("image/*"));
-        MultipartBody.Part body = MultipartBody.Part.createFormData("image", photoFile.getName(), requestFile);
+            Call<List<String>> call = api.uploadPhoto(body);
+            call.enqueue(new Callback<>() {
+                @Override
+                public void onResponse(Call<List<String>> call, Response<List<String>> response) {
+                    if (response.isSuccessful() && response.body() != null) {
+                        Log.i("SendPhotoToAPI", "Upload thành công");
+                        Log.i("SendPhotoToAPI", "Body: " + response.body());
 
-        Call<List<String>> call = api.uploadPhoto(body);
-        call.enqueue(new Callback<>() {
-            @Override
-            public void onResponse(Call<List<String>> call, Response<List<String>> response) {
-                if (response.isSuccessful() && response.body() != null) {
-                    Log.i("SendPhotoToAPI", "Upload thành công");
-                    Log.i("SendPhotoToAPI", "Body: " + response.body());
-
-                    List<String> suggestedTags = response.body();
-                    Log.i("SendPhotoToAPI", "Tags: " + suggestedTags);
-                    runOnUiThread(() -> {
-                        if (currentPhoto.getHashtags() == null) {
-                            currentPhoto.setHashtags(new Hashtags(new ArrayList<>()));
-                        }
-
-                        List<String> userTags = currentPhoto.getHashtags().getHashtags();
-                        for (String tag : suggestedTags) {
-                            if (!userTags.contains(tag)) {
-                                userTags.add(tag);
+                        List<String> suggestedTags = response.body();
+                        Log.i("SendPhotoToAPI", "Tags: " + suggestedTags);
+                        runOnUiThread(() -> {
+                            if (currentPhoto.getHashtags() == null) {
+                                currentPhoto.setHashtags(new Hashtags(new ArrayList<>()));
                             }
+
+                            List<String> userTags = currentPhoto.getHashtags().getHashtags();
+                            for (String tag : suggestedTags) {
+                                if (!userTags.contains(tag)) {
+                                    userTags.add(tag);
+                                }
+                            }
+
+                            photoViewModel.updatePhoto(currentPhoto);
+                            updateHashtags(currentPhoto);
+                        });
+                    } else {
+                        Log.i("SendPhotoToAPI", "Upload thất bại: " + response.toString());
+                        runOnUiThread(() -> Toast.makeText(DisplaySinglePhotoActivity.this,
+                                "Không nhận được hashtag gọi ý", Toast.LENGTH_SHORT).show());
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<List<String>> call, Throwable t) {
+                    Log.i("SendPhotoToAPI", "Upload thất bại" + t.getMessage());
+                    runOnUiThread(() -> Toast.makeText(DisplaySinglePhotoActivity.this,
+                            "Không nhận được kết nối từ server", Toast.LENGTH_SHORT).show());
+                }
+            });
+        } catch (IllegalStateException e) {
+            Log.i("SendPhotoToAPI", "Lỗi khi khởi tạo API: " + e.getMessage());
+            Toast.makeText(this, "Lỗi kết nối API: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void discoverServerViaUdp(ServerDiscoveryCallback callback) {
+        new Thread(() -> {
+            DatagramSocket socket = null;
+            try {
+                // Create UDP socket
+                socket = new DatagramSocket();
+                socket.setBroadcast(true);
+                socket.setSoTimeout(5000); // 5 seconds timeout
+
+                // Broadcast message to discover server
+                String discoveryMessage = "DISCOVER_SERVER";
+                byte[] sendData = discoveryMessage.getBytes();
+
+                // Broadcast on all network interfaces
+                Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+                while (interfaces.hasMoreElements()) {
+                    NetworkInterface networkInterface = interfaces.nextElement();
+
+                    if (networkInterface.isLoopback() || !networkInterface.isUp()) {
+                        continue; // Skip loopback and inactive interfaces
+                    }
+
+                    for (InterfaceAddress interfaceAddress : networkInterface.getInterfaceAddresses()) {
+                        InetAddress broadcast = interfaceAddress.getBroadcast();
+                        if (broadcast == null) {
+                            continue;
                         }
 
-                        photoViewModel.updatePhoto(currentPhoto);
-                        updateHashtags(currentPhoto);
-                    });
-                } else {
-                    Log.i("SendPhotoToAPI", "Upload thất bại: " + response.toString());
-                    Toast.makeText(DisplaySinglePhotoActivity.this, "Không nhận được hashtag gọi ý", Toast.LENGTH_SHORT).show();
+                        // Send broadcast packet
+                        DatagramPacket sendPacket = new DatagramPacket(
+                                sendData,
+                                sendData.length,
+                                broadcast,
+                                8888 // Server's UDP port
+                        );
+                        socket.send(sendPacket);
+                    }
+                }
+
+                // Wait for response
+                byte[] receiveBuffer = new byte[1024];
+                DatagramPacket receivePacket = new DatagramPacket(receiveBuffer, receiveBuffer.length);
+                socket.receive(receivePacket);
+
+                // Process response
+                String serverResponse = new String(receivePacket.getData(), 0, receivePacket.getLength());
+                Log.d("UDP Discovery", "Received: " + serverResponse);
+
+                // Parse JSON response { "base_url": "192.168.1.100", "port": "8080" }
+                JSONObject jsonResponse = new JSONObject(serverResponse);
+                String baseUrl = jsonResponse.getString("server_ip");
+                String port = jsonResponse.getString("server_port");
+
+                runOnUiThread(() -> callback.onServerDiscovered(baseUrl, port));
+
+            } catch (SocketTimeoutException e) {
+                runOnUiThread(() -> callback.onDiscoveryFailed("Timeout: Server not found"));
+            } catch (Exception e) {
+                runOnUiThread(() -> callback.onDiscoveryFailed(e.getMessage()));
+            } finally {
+                if (socket != null && !socket.isClosed()) {
+                    socket.close();
                 }
             }
-
-            public void onFailure(Call<List<String>> call, Throwable t) {
-                Log.i("SendPhotoToAPI", "Upload thất bại" + t.getMessage());
-                Toast.makeText(DisplaySinglePhotoActivity.this, "Không nhận được kết nối từ server", Toast.LENGTH_SHORT).show();
-            }
-        });
-
-
+        }).start();
     }
 }
