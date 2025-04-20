@@ -20,9 +20,9 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 public class ApiClient {
-//    private static final String IP = "10.0.2.2";
+    private static final String IP = "10.0.2.2";
 
-    private static final String IP = "192.168.0.102";
+//    private static final String IP = "192.168.0.102";
     private static String BASE_URL = "";
 
     private static Retrofit retrofit;
