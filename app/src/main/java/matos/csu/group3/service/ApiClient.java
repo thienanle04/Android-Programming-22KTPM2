@@ -20,16 +20,19 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 public class ApiClient {
+//    private static final String IP = "10.0.2.2";
+
+    private static final String IP = "192.168.0.102";
     private static String BASE_URL = "";
+
     private static Retrofit retrofit;
     private static String jwtToken = "";
-    private static final String CLIENT_USERNAME = "client";
-    private static final String CLIENT_PASSWORD = "1234";
-    private static final int UDP_BROADCAST_TIMEOUT = 5000; // 5 seconds timeout for UDP broadcast
+
+    private static final int PORT = 8080;
 
     // Method to initialize the API client with discovered server details
-    public static void initialize(String baseUrl, String port, String token) {
-        BASE_URL = "https://" + baseUrl + ":" + port + "/";
+    public static void initialize(String token) {
+        BASE_URL = "https://" + IP + ":" + PORT + "/";
         jwtToken = "Bearer " + token;
         retrofit = null; // Reset retrofit to force recreation with new base URL
     }
@@ -72,8 +75,8 @@ public class ApiClient {
     }
 
     // Method to get the auth service for token retrieval
-    public static AuthService getAuthService(String baseUrl, String port) {
-        String tempBaseUrl = "https://" + baseUrl + ":" + port + "/";
+    public static AuthService getAuthService() {
+        String tempBaseUrl = "https://" + IP + ":" + PORT + "/";
 
         Gson gson = new GsonBuilder()
                 .setLenient() // This allows parsing of malformed JSON

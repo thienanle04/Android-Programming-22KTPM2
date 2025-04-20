@@ -210,7 +210,6 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
     }
     private void loadCurrentPhoto() {
         if (isInvalidPosition()) return;
-        Toast.makeText(this, "Cur Pos: " + currentPosition, Toast.LENGTH_SHORT).show();
         photoViewModel.getPhotoById(photoIds.get(currentPosition)).removeObservers(this);
         photoViewModel.getPhotoById(photoIds.get(currentPosition)).observe(this, new Observer<PhotoEntity>() {
             @Override
@@ -539,58 +538,6 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
         }
     }
 
-//    private void sendPhotoToApi(PhotoEntity photoEntity) {
-//        File photoFile = new File(photoEntity.getFilePath());
-//
-//        if (!photoFile.exists()) {
-//            Toast.makeText(this, "File " + photoFile + " không tồn tại", Toast.LENGTH_SHORT).show();
-//            return;
-//        }
-//
-//        PhotoUploadApi api = ApiClient.getRetrofitInstance().create(PhotoUploadApi.class);
-//
-//        RequestBody requestFile = RequestBody.create(photoFile, MediaType.parse("image/*"));
-//        MultipartBody.Part body = MultipartBody.Part.createFormData("image", photoFile.getName(), requestFile);
-//
-//        Call<List<String>> call = api.uploadPhoto(body);
-//        call.enqueue(new Callback<>() {
-//            @Override
-//            public void onResponse(Call<List<String>> call, Response<List<String>> response) {
-//                if (response.isSuccessful() && response.body() != null) {
-//                    Log.i("SendPhotoToAPI", "Upload thành công");
-//                    Log.i("SendPhotoToAPI", "Body: " + response.body());
-//
-//                    List<String> suggestedTags = response.body();
-//                    Log.i("SendPhotoToAPI", "Tags: " + suggestedTags);
-//                    runOnUiThread(() -> {
-//                        if (currentPhoto.getHashtags() == null) {
-//                            currentPhoto.setHashtags(new Hashtags(new ArrayList<>()));
-//                        }
-//
-//                        List<String> userTags = currentPhoto.getHashtags().getHashtags();
-//                        for (String tag : suggestedTags) {
-//                            if (!userTags.contains(tag)) {
-//                                userTags.add(tag);
-//                            }
-//                        }
-//
-//                        photoViewModel.updatePhoto(currentPhoto);
-//                        updateHashtags(currentPhoto);
-//                    });
-//                } else {
-//                    Log.i("SendPhotoToAPI", "Upload thất bại: " + response.toString());
-//                    Toast.makeText(DisplaySinglePhotoActivity.this, "Không nhận được hashtag gọi ý", Toast.LENGTH_SHORT).show();
-//                }
-//            }
-//
-//            public void onFailure(Call<List<String>> call, Throwable t) {
-//                Log.i("SendPhotoToAPI", "Upload thất bại" + t.getMessage());
-//                Toast.makeText(DisplaySinglePhotoActivity.this, "Không nhận được kết nối từ server", Toast.LENGTH_SHORT).show();
-//            }
-//        });
-//
-//
-//    }
 interface ServerDiscoveryCallback {
     void onServerDiscovered(String baseUrl, String port);
     void onDiscoveryFailed(String error);
@@ -608,19 +555,15 @@ private void sendPhotoToApi(PhotoEntity photoEntity) {
 }
 
     private void initializeApiClientAndUploadPhoto(PhotoEntity photoEntity) {
-        // Step 1: Broadcast UDP to discover server (pseudo-code)
-        discoverServerViaUdp(new ServerDiscoveryCallback() {
-            @Override
-            public void onServerDiscovered(String baseUrl, String port) {
-                // Step 2: Get JWT token using discovered server details
-                AuthService authService = ApiClient.getAuthService(baseUrl, port);
+        new Thread(() -> {
+            try {
+                AuthService authService = ApiClient.getAuthService();
                 AuthRequest authRequest = new AuthRequest("client", "1234");
-
                 authService.getToken(authRequest).enqueue(new Callback<String>() {
                     @Override
                     public void onResponse(Call<String> call, Response<String> response) {
                         if (response.isSuccessful() && response.body() != null) {
-                            ApiClient.initialize(baseUrl, port, response.body());
+                            ApiClient.initialize(response.body());
                             uploadPhotoToApi(photoEntity);
                         } else {
                             Log.i("SendPhotoToAPI", "Authentication failed:" + response.toString());
@@ -634,14 +577,11 @@ private void sendPhotoToApi(PhotoEntity photoEntity) {
                         runOnUiThread(() -> Toast.makeText(DisplaySinglePhotoActivity.this, "Network error", Toast.LENGTH_LONG).show());
                     }
                 });
+            } catch (Exception e) {
+                Log.e("AuthError", "Exception in authentication process", e);
+                runOnUiThread(() -> Toast.makeText(DisplaySinglePhotoActivity.this, "Authentication error occurred", Toast.LENGTH_LONG).show());
             }
-
-            @Override
-            public void onDiscoveryFailed(String error) {
-                runOnUiThread(() -> Toast.makeText(DisplaySinglePhotoActivity.this,
-                        "Không tìm thấy server: " + error, Toast.LENGTH_SHORT).show());
-            }
-        });
+        }).start();
     }
 
     private void uploadPhotoToApi(PhotoEntity photoEntity) {
@@ -700,72 +640,5 @@ private void sendPhotoToApi(PhotoEntity photoEntity) {
             Log.i("SendPhotoToAPI", "Lỗi khi khởi tạo API: " + e.getMessage());
             Toast.makeText(this, "Lỗi kết nối API: " + e.getMessage(), Toast.LENGTH_SHORT).show();
         }
-    }
-
-    private void discoverServerViaUdp(ServerDiscoveryCallback callback) {
-        new Thread(() -> {
-            DatagramSocket socket = null;
-            try {
-                // Create UDP socket
-                socket = new DatagramSocket();
-                socket.setBroadcast(true);
-                socket.setSoTimeout(5000); // 5 seconds timeout
-
-                // Broadcast message to discover server
-                String discoveryMessage = "DISCOVER_SERVER";
-                byte[] sendData = discoveryMessage.getBytes();
-
-                // Broadcast on all network interfaces
-                Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
-                while (interfaces.hasMoreElements()) {
-                    NetworkInterface networkInterface = interfaces.nextElement();
-
-                    if (networkInterface.isLoopback() || !networkInterface.isUp()) {
-                        continue; // Skip loopback and inactive interfaces
-                    }
-
-                    for (InterfaceAddress interfaceAddress : networkInterface.getInterfaceAddresses()) {
-                        InetAddress broadcast = interfaceAddress.getBroadcast();
-                        if (broadcast == null) {
-                            continue;
-                        }
-
-                        // Send broadcast packet
-                        DatagramPacket sendPacket = new DatagramPacket(
-                                sendData,
-                                sendData.length,
-                                broadcast,
-                                8888 // Server's UDP port
-                        );
-                        socket.send(sendPacket);
-                    }
-                }
-
-                // Wait for response
-                byte[] receiveBuffer = new byte[1024];
-                DatagramPacket receivePacket = new DatagramPacket(receiveBuffer, receiveBuffer.length);
-                socket.receive(receivePacket);
-
-                // Process response
-                String serverResponse = new String(receivePacket.getData(), 0, receivePacket.getLength());
-                Log.d("UDP Discovery", "Received: " + serverResponse);
-
-                // Parse JSON response { "base_url": "192.168.1.100", "port": "8080" }
-                JSONObject jsonResponse = new JSONObject(serverResponse);
-                String baseUrl = jsonResponse.getString("server_ip");
-                String port = jsonResponse.getString("server_port");
-
-                runOnUiThread(() -> callback.onServerDiscovered(baseUrl, port));
-
-            } catch (SocketTimeoutException e) {
-                runOnUiThread(() -> callback.onDiscoveryFailed("Timeout: Server not found"));
-            } catch (Exception e) {
-                runOnUiThread(() -> callback.onDiscoveryFailed(e.getMessage()));
-            } finally {
-                if (socket != null && !socket.isClosed()) {
-                    socket.close();
-                }
-            }
-        }).start();
     }
 }
