@@ -39,9 +39,11 @@ import java.util.Collections;
 import java.util.List;
 
 import matos.csu.group3.R;
+import matos.csu.group3.data.api.PhotoUploadApi;
 import matos.csu.group3.data.local.AppDatabase;
 import matos.csu.group3.data.local.dao.PhotoDao;
 import matos.csu.group3.data.local.entity.Hashtags;
+import matos.csu.group3.service.ApiClient;
 import matos.csu.group3.ui.adapter.HashtagAdapter;
 import matos.csu.group3.data.local.entity.AlbumEntity;
 import matos.csu.group3.data.local.entity.PhotoEntity;
@@ -51,6 +53,15 @@ import matos.csu.group3.ui.editor.CropAndRotateActivity;
 import matos.csu.group3.utils.PhotoCache;
 import matos.csu.group3.viewmodel.PhotoViewModel;
 import matos.csu.group3.repository.PhotoRepository;
+
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.RequestBody;
+import okhttp3.ResponseBody;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class DisplaySinglePhotoActivity extends AppCompatActivity {
 
@@ -72,6 +83,7 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
     private PhotoEntity currentPhoto;
     private AlbumRepository albumRepository;
     private MaterialButton btnAddHashtag;
+    private MaterialButton btnHintHashtag;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -86,6 +98,7 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
         btnSoloBack = findViewById(R.id.btnSoloBack);
         btnToggleVisibility = findViewById(R.id.btnToggleVisibility);
         btnAddHashtag = findViewById(R.id.btnAddHashtag);
+        btnHintHashtag = findViewById(R.id.btnSuggestHashtag);
 
         hashtagsRecyclerView = findViewById(R.id.recyclerViewHashtags);
         FlexboxLayoutManager flexboxLayoutManager = new FlexboxLayoutManager(this);
@@ -173,6 +186,11 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
                 builder.setNegativeButton("CANCEL", (dialog, which) -> dialog.cancel());
 
                 builder.show();
+            }
+        });
+        btnHintHashtag.setOnClickListener(v -> {
+            if (currentPhoto != null) {
+                sendPhotoToApi(currentPhoto);
             }
         });
     }
@@ -505,5 +523,58 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
                 photoViewModel.updatePhoto(currentPhoto);
             }
         }
+    }
+
+    private void sendPhotoToApi(PhotoEntity photoEntity) {
+        File photoFile = new File(photoEntity.getFilePath());
+
+        if (!photoFile.exists()) {
+            Toast.makeText(this, "File " + photoFile + " không tồn tại", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        PhotoUploadApi api = ApiClient.getRetrofitInstance().create(PhotoUploadApi.class);
+
+        RequestBody requestFile = RequestBody.create(photoFile, MediaType.parse("image/*"));
+        MultipartBody.Part body = MultipartBody.Part.createFormData("image", photoFile.getName(), requestFile);
+
+        Call<List<String>> call = api.uploadPhoto(body);
+        call.enqueue(new Callback<>() {
+            @Override
+            public void onResponse(Call<List<String>> call, Response<List<String>> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    Log.i("SendPhotoToAPI", "Upload thành công");
+                    Log.i("SendPhotoToAPI", "Body: " + response.body());
+
+                    List<String> suggestedTags = response.body();
+                    Log.i("SendPhotoToAPI", "Tags: " + suggestedTags);
+                    runOnUiThread(() -> {
+                        if (currentPhoto.getHashtags() == null) {
+                            currentPhoto.setHashtags(new Hashtags(new ArrayList<>()));
+                        }
+
+                        List<String> userTags = currentPhoto.getHashtags().getHashtags();
+                        for (String tag : suggestedTags) {
+                            if (!userTags.contains(tag)) {
+                                userTags.add(tag);
+                            }
+                        }
+
+                        photoViewModel.updatePhoto(currentPhoto);
+                        updateHashtags(currentPhoto);
+                    });
+                } else {
+                    Log.i("SendPhotoToAPI", "Upload thất bại: " + response.toString());
+                    Toast.makeText(DisplaySinglePhotoActivity.this, "Không nhận được hashtag gọi ý", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            public void onFailure(Call<List<String>> call, Throwable t) {
+                Log.i("SendPhotoToAPI", "Upload thất bại" + t.getMessage());
+                Toast.makeText(DisplaySinglePhotoActivity.this, "Không nhận được kết nối từ server", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+
     }
 }

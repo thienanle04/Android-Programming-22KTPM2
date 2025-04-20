@@ -92,7 +92,11 @@ dependencies {
     implementation(libs.flexbox)
     implementation(libs.work.runtime.ktx)
     implementation(libs.swiperefreshlayout)
+    implementation (libs.com.squareup.retrofit2.retrofit3)
+    implementation (libs.converter.gson)
+    implementation (libs.okhttp)
+    implementation ("com.squareup.okhttp3:logging-interceptor:4.12.0")
     implementation("com.google.android.gms:play-services-maps:18.2.0")
     implementation("com.google.android.libraries.places:places:3.3.0")
-    implementation ("com.google.android.material:material:1.6.0")
+    implementation (libs.material.v160)
 }
