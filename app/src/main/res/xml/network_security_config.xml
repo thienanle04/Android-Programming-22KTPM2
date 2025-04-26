@@ -1,13 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">* </domain>
-    </domain-config>
-
-    <base-config cleartextTrafficPermitted="true">
+    <!-- Base config for all domains -->
+    <base-config cleartextTrafficPermitted="false">
         <trust-anchors>
-            <certificates src="user"/>
-            <domain includeSubdomains="true">* </domain>
+            <certificates src="system"/>
         </trust-anchors>
     </base-config>
+
+    <!-- Special rules for your debug environment -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">10.0.2.2</domain> <!-- Emulator localhost -->
+        <domain includeSubdomains="true">localhost</domain>
+    </domain-config>
 </network-security-config>

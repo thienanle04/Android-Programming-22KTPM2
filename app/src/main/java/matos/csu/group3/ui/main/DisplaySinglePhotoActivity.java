@@ -135,7 +135,7 @@ public class DisplaySinglePhotoActivity extends AppCompatActivity {
             photoIds = PhotoCache.getInstance().getPhotoListIds();
             currentPosition = intent.getIntExtra("currentPosition", 0);
             isTrashAlbum = intent.getBooleanExtra("isTrashAlbum", false);
-//            loadCurrentPhoto();
+            loadCurrentPhoto();
         }
 
         photoPagerAdapter = new PhotoPagerAdapter(photoIds, photoViewModel, this);

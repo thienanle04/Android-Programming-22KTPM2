@@ -184,6 +184,7 @@ public class SettingsFragment extends PreferenceFragmentCompat {
                             public void onError(Exception e) {
                                 updateLoginStatus(false);
                                 Toast.makeText(getContext(), "Sign-in failed: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                                Log.e("google-sign-in", e.toString());
                             }
                         });
                     } else {
