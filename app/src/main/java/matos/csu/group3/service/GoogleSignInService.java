@@ -1,8 +1,5 @@
 package matos.csu.group3.service;
 
-import matos.csu.group3.BuildConfig;
-import matos.csu.group3.ui.fragment.SettingsFragment;
-
 import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.Context;
@@ -17,7 +14,6 @@ import android.util.Log;
 import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.preference.PreferenceManager;
 
 import net.openid.appauth.AuthState;
@@ -33,18 +29,24 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
-import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
+import matos.csu.group3.BuildConfig;
+import matos.csu.group3.data.local.dao.PhotoDao;
+import matos.csu.group3.data.local.entity.PhotoEntity;
 
 public class GoogleSignInService {
     private static final String TAG = "GoogleSignInService";
@@ -53,26 +55,33 @@ public class GoogleSignInService {
     private AuthorizationService authService;
     private AuthState authState;
     private Context context;
+    private PhotoDao photoDao; // Add PhotoDao
 
-    public GoogleSignInService(Context context) {
+    public GoogleSignInService(Context context, PhotoDao photoDao) {
         this.context = context;
         this.authService = new AuthorizationService(context);
         this.authState = new AuthState();
+        this.photoDao = photoDao; // Initialize PhotoDao
     }
 
     public void signIn(ActivityResultLauncher<Intent> launcher) {
         AuthorizationServiceConfiguration serviceConfig =
                 new AuthorizationServiceConfiguration(
-                        Uri.parse("https://accounts.google.com/o/oauth2/auth"), // Auth endpoint
-                        Uri.parse("https://oauth2.googleapis.com/token")  // Token endpoint
+                        Uri.parse("https://accounts.google.com/o/oauth2/auth"),
+                        Uri.parse("https://oauth2.googleapis.com/token")
                 );
+
+        Map<String, String> additionalParams = new HashMap<>();
+        additionalParams.put("access_type", "offline"); // Request a refresh token
 
         AuthorizationRequest authRequest = new AuthorizationRequest.Builder(
                 serviceConfig,
                 CLIENT_ID,
                 ResponseTypeValues.CODE,
                 Uri.parse(REDIRECT_URI))
-                .setScopes("openid", "profile", "email", "https://www.googleapis.com/auth/drive.file") // Add Drive scope
+                .setScopes("openid", "profile", "email", "https://www.googleapis.com/auth/drive.file")
+                .setPrompt("consent") // Use setPrompt instead of additionalParams
+                .setAdditionalParameters(additionalParams)
                 .build();
 
         Intent authIntent = authService.getAuthorizationRequestIntent(authRequest);
@@ -129,7 +138,6 @@ public class GoogleSignInService {
         executorService.execute(() -> {
             JSONObject userInfo = getUserInfo(accessToken);
             if (userInfo != null) {
-                // Ensure UI updates are done on the main thread
                 new Handler(Looper.getMainLooper()).post(() -> {
                     saveUserInfoToSharedPreferences(userInfo, accessToken);
                 });
@@ -160,21 +168,39 @@ public class GoogleSignInService {
         }
     }
 
+    public void signOut() {
+        authState = new AuthState();
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        SharedPreferences.Editor editor = prefs.edit();
+        editor.remove("is_logged_in");
+        editor.remove("access_token");
+        editor.remove("user_id");
+        editor.remove("user_name");
+        editor.remove("user_email");
+        editor.remove("user_picture");
+        editor.remove("user_given_name");
+        editor.remove("user_family_name");
+        editor.remove("user_locale");
+        editor.apply();
+        Log.d(TAG, "Signed out and cleared auth state");
+    }
+
     public interface AuthResultCallback {
         void onSuccess(TokenResponse response);
         void onError(Exception e);
     }
 
-    // Class to hold image information
     private static class ImageInfo {
         Uri uri;
         String name;
         String mimeType;
+        PhotoEntity photoEntity; // Add reference to PhotoEntity
 
-        ImageInfo(Uri uri, String name, String mimeType) {
+        ImageInfo(Uri uri, String name, String mimeType, PhotoEntity photoEntity) {
             this.uri = uri;
             this.name = name;
             this.mimeType = mimeType;
+            this.photoEntity = photoEntity;
         }
     }
 
@@ -183,12 +209,14 @@ public class GoogleSignInService {
             Toast.makeText(context, message, Toast.LENGTH_LONG).show();
         });
     }
-    public void syncPhotosToDrive() {
+
+    public void syncPhotosToDrive(ActivityResultLauncher<Intent> launcher) {
         Log.d(TAG, "Starting photo sync to Google Drive");
         authState.performActionWithFreshTokens(authService, (accessToken, idToken, ex) -> {
             if (ex != null) {
                 Log.e(TAG, "Failed to get fresh tokens: " + ex.getMessage(), ex);
-                notifyUser("Sync failed: Unable to authenticate");
+                notifyUser("Authentication expired. Please sign in again.");
+                new Handler(Looper.getMainLooper()).post(() -> signIn(launcher));
                 return;
             }
             Log.d(TAG, "Obtained fresh access token");
@@ -204,12 +232,8 @@ public class GoogleSignInService {
                     }
                     Log.d(TAG, "Photos folder ID: " + folderId);
 
-                    // Get existing files in the photos folder
-                    Set<String> existingFileNames = getExistingFileNames(accessToken, folderId);
-                    Log.d(TAG, "Found " + existingFileNames.size() + " existing files in photos folder");
-
                     List<ImageInfo> images = getDeviceImages();
-                    Log.d(TAG, "Found " + images.size() + " images on device");
+                    Log.d(TAG, "Found " + images.size() + " images to process");
                     if (images.isEmpty()) {
                         notifyUser("No images found to sync");
                         return;
@@ -217,10 +241,10 @@ public class GoogleSignInService {
 
                     List<ImageInfo> imagesToUpload = new ArrayList<>();
                     for (ImageInfo image : images) {
-                        if (!existingFileNames.contains(image.name)) {
+                        if (!image.photoEntity.isUploaded()) {
                             imagesToUpload.add(image);
                         } else {
-                            Log.d(TAG, "Skipping image (already exists): " + image.name);
+                            Log.d(TAG, "Skipping image (already uploaded): " + image.name);
                         }
                     }
                     Log.d(TAG, "Selected " + imagesToUpload.size() + " new images to upload");
@@ -235,10 +259,20 @@ public class GoogleSignInService {
                         uploadExecutor.execute(() -> {
                             try {
                                 Log.d(TAG, "Uploading image: " + image.name);
-                                uploadImageToDrive(accessToken, folderId, image);
-                                Log.d(TAG, "Successfully uploaded image: " + image.name);
+                                String googleDriveId = uploadImageToDrive(accessToken, folderId, image);
+                                if (googleDriveId != null) {
+                                    Log.d(TAG, "Successfully uploaded image: " + image.name);
+                                    // Update the PhotoEntity in the database
+                                    PhotoEntity photo = image.photoEntity;
+                                    photo.setUploaded(true);
+                                    photo.setGoogleDriveId(googleDriveId);
+                                    photoDao.updateUploadStatus(photo.getId(), true);
+                                    Log.d(TAG, "Updated isUploaded for photo ID: " + photo.getId());
+                                }
                             } catch (IOException e) {
                                 Log.e(TAG, "Error uploading image: " + image.name + ", error: " + e.getMessage(), e);
+                            } catch (JSONException e) {
+                                throw new RuntimeException(e);
                             }
                         });
                     }
@@ -259,32 +293,6 @@ public class GoogleSignInService {
         });
     }
 
-    private Set<String> getExistingFileNames(String accessToken, String folderId) throws IOException, JSONException {
-        Log.d(TAG, "Querying existing files in folder: " + folderId);
-        Set<String> fileNames = new HashSet<>();
-        String url = "https://www.googleapis.com/drive/v3/files?q='" + folderId + "'+in+parents+and+trashed=false";
-        HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
-        conn.setRequestProperty("Authorization", "Bearer " + accessToken);
-        conn.setRequestMethod("GET");
-
-        int responseCode = conn.getResponseCode();
-        Log.d(TAG, "File query response code: " + responseCode);
-        if (responseCode == 200) {
-            InputStream is = conn.getInputStream();
-            String response = new Scanner(is).useDelimiter("\\A").next();
-            JSONObject json = new JSONObject(response);
-            JSONArray files = json.getJSONArray("files");
-            for (int i = 0; i < files.length(); i++) {
-                String name = files.getJSONObject(i).getString("name");
-                fileNames.add(name);
-                Log.d(TAG, "Found existing file: " + name);
-            }
-        } else {
-            Log.e(TAG, "File query failed with response code: " + responseCode);
-        }
-        return fileNames;
-    }
-
     private String getOrCreatePhotosFolder(String accessToken) throws IOException, JSONException {
         Log.d(TAG, "Checking for existing photos folder");
         String url = "https://www.googleapis.com/drive/v3/files?q=mimeType='application/vnd.google-apps.folder'+and+name='photos'+and+trashed=false";
@@ -297,16 +305,22 @@ public class GoogleSignInService {
         if (responseCode == 200) {
             InputStream is = conn.getInputStream();
             String response = new Scanner(is).useDelimiter("\\A").next();
+            Log.d(TAG, "Folder query response: " + response);
             JSONObject json = new JSONObject(response);
             JSONArray files = json.getJSONArray("files");
             if (files.length() > 0) {
                 String folderId = files.getJSONObject(0).getString("id");
                 Log.d(TAG, "Found existing photos folder with ID: " + folderId);
+                conn.disconnect();
                 return folderId;
             }
         } else {
             Log.e(TAG, "Folder query failed with response code: " + responseCode);
+            InputStream errorStream = conn.getErrorStream();
+            String errorResponse = errorStream != null ? new Scanner(errorStream).useDelimiter("\\A").next() : "";
+            Log.e(TAG, "Error response: " + errorResponse);
         }
+        conn.disconnect();
 
         Log.d(TAG, "Creating new photos folder");
         url = "https://www.googleapis.com/drive/v3/files";
@@ -326,49 +340,46 @@ public class GoogleSignInService {
         if (responseCode == 200) {
             InputStream is = conn.getInputStream();
             String response = new Scanner(is).useDelimiter("\\A").next();
+            Log.d(TAG, "Folder creation response: " + response);
             JSONObject json = new JSONObject(response);
             String folderId = json.getString("id");
             Log.d(TAG, "Created new photos folder with ID: " + folderId);
+            conn.disconnect();
             return folderId;
         } else {
             Log.e(TAG, "Failed to create folder, response code: " + responseCode);
             InputStream errorStream = conn.getErrorStream();
             String errorResponse = errorStream != null ? new Scanner(errorStream).useDelimiter("\\A").next() : "";
             Log.e(TAG, "Error response: " + errorResponse);
+            conn.disconnect();
             return null;
         }
     }
 
-
     private List<ImageInfo> getDeviceImages() {
-        Log.d(TAG, "Querying device images");
+        Log.d(TAG, "Querying device images from database");
         List<ImageInfo> images = new ArrayList<>();
-        ContentResolver resolver = context.getContentResolver();
-        Uri uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
-        String[] projection = {
-                MediaStore.Images.Media._ID,
-                MediaStore.Images.Media.DISPLAY_NAME,
-                MediaStore.Images.Media.MIME_TYPE
-        };
 
-        Cursor cursor = resolver.query(uri, projection, null, null, null);
-        if (cursor != null) {
-            Log.d(TAG, "Found " + cursor.getCount() + " images in MediaStore");
-            while (cursor.moveToNext()) {
-                long id = cursor.getLong(cursor.getColumnIndexOrThrow(MediaStore.Images.Media._ID));
-                String name = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DISPLAY_NAME));
-                String mimeType = cursor.getString(cursor.getColumnIndexOrThrow(MediaStore.Images.Media.MIME_TYPE));
-                Uri imageUri = ContentUris.withAppendedId(uri, id);
-                images.add(new ImageInfo(imageUri, name, mimeType));
-            }
-            cursor.close();
-        } else {
-            Log.e(TAG, "MediaStore cursor is null");
+        List<PhotoEntity> photos = photoDao.getAllNonDeletedPhotos();
+        Log.d(TAG, "Found " + photos.size() + " photos in database");
+
+        for (PhotoEntity photo : photos) {
+            String filePath = photo.getFilePath();
+            Uri uri = Uri.fromFile(new File(filePath)); // Still create Uri, but not used in upload
+            String name = photo.getName();
+            String mimeType = photo.getFileFormat() != null ? "image/" + photo.getFileFormat() : "image/jpeg";
+            images.add(new ImageInfo(uri, name, mimeType, photo));
         }
+
         return images;
     }
 
-    private void uploadImageToDrive(String accessToken, String folderId, ImageInfo image) throws IOException {
+    private String uploadImageToDrive(String accessToken, String folderId, ImageInfo image) throws IOException, JSONException {
+        if (folderId == null) {
+            Log.e(TAG, "Cannot upload image: folderId is null");
+            return null;
+        }
+
         String url = "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart";
         HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
         conn.setRequestProperty("Authorization", "Bearer " + accessToken);
@@ -388,10 +399,13 @@ public class GoogleSignInService {
                 "Content-Type: " + image.mimeType + "\r\n\r\n";
         os.write(mediaHeader.getBytes());
 
-        InputStream is = context.getContentResolver().openInputStream(image.uri);
+        // Use FileInputStream instead of ContentResolver
+        File imageFile = new File(image.photoEntity.getFilePath());
+        InputStream is = new FileInputStream(imageFile);
         if (is == null) {
             Log.e(TAG, "Failed to open InputStream for image: " + image.name);
-            return;
+            conn.disconnect();
+            return null;
         }
         byte[] buffer = new byte[4096];
         int bytesRead;
@@ -405,12 +419,19 @@ public class GoogleSignInService {
         os.flush();
 
         int responseCode = conn.getResponseCode();
+        String fileId = null;
         if (responseCode == 200) {
-            Log.d(TAG, "Uploaded image: " + image.name + " successfully");
+            InputStream isResponse = conn.getInputStream();
+            String response = new Scanner(isResponse).useDelimiter("\\A").next();
+            JSONObject json = new JSONObject(response);
+            fileId = json.getString("id");
+            Log.d(TAG, "Uploaded image: " + image.name + " successfully with fileId: " + fileId);
         } else {
             InputStream errorStream = conn.getErrorStream();
             String errorResponse = errorStream != null ? new Scanner(errorStream).useDelimiter("\\A").next() : "";
             Log.e(TAG, "Failed to upload image: " + image.name + ", response code: " + responseCode + ", error: " + errorResponse);
         }
+        conn.disconnect();
+        return fileId;
     }
 }

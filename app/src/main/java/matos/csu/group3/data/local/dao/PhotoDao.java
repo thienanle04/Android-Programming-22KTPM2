@@ -87,4 +87,6 @@ public interface PhotoDao {
     void updateFavoriteStatusDirectly(int photoId, boolean isFavorite);
     @Query("UPDATE photos SET isHidden = :isHidden WHERE id = :photoId")
     void updateHiddenStatusDirectly(int photoId, boolean isHidden);
+    @Query("UPDATE photos SET isUploaded = :isUpload WHERE id = :photoId")
+    void updateUploadStatus(int photoId, boolean isUpload);
 }

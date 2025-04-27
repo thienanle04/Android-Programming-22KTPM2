@@ -3,30 +3,29 @@ package matos.csu.group3.ui.fragment;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts;
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatDelegate;
-import androidx.preference.ListPreference;
-import androidx.preference.PreferenceFragmentCompat;
-import androidx.preference.PreferenceManager;
-
-import matos.csu.group3.R;
-import matos.csu.group3.service.GoogleSignInService;
-import matos.csu.group3.utils.AppConfig;
-import matos.csu.group3.utils.PasswordHelper;
-
-import android.content.Intent;
 import android.text.InputType;
 import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatDelegate;
+import androidx.preference.ListPreference;
 import androidx.preference.Preference;
+import androidx.preference.PreferenceFragmentCompat;
+import androidx.preference.PreferenceManager;
+
+import matos.csu.group3.R;
+import matos.csu.group3.data.local.AppDatabase; // Import your Room database
+import matos.csu.group3.service.GoogleSignInService;
+import matos.csu.group3.utils.AppConfig;
+import matos.csu.group3.utils.PasswordHelper;
 
 import net.openid.appauth.TokenResponse;
 
@@ -56,6 +55,10 @@ public class SettingsFragment extends PreferenceFragmentCompat {
     public void onCreatePreferences(Bundle savedInstanceState, String rootKey) {
         setPreferencesFromResource(R.xml.preferences, rootKey);
 
+        // Initialize PhotoDao and GoogleSignInService
+        AppDatabase db = AppDatabase.getInstance(requireContext());
+        googleSignInService = new GoogleSignInService(requireContext(), db.photoDao());
+
         ListPreference darkModePref = findPreference("dark_mode");
         if (darkModePref != null) {
             darkModePref.setOnPreferenceChangeListener((preference, newValue) -> {
@@ -77,9 +80,6 @@ public class SettingsFragment extends PreferenceFragmentCompat {
             });
         }
 
-        googleSignInService = new GoogleSignInService(requireContext());
-
-        // Existing preferences
         Preference setHidePasswordPref = findPreference("set_hide_password");
         if (setHidePasswordPref != null) {
             setHidePasswordPref.setOnPreferenceClickListener(preference -> {
@@ -139,11 +139,10 @@ public class SettingsFragment extends PreferenceFragmentCompat {
             });
         }
 
-        // New Sync Photos preference
         Preference syncPhotosPref = findPreference("sync_photos");
         if (syncPhotosPref != null) {
             syncPhotosPref.setOnPreferenceClickListener(preference -> {
-                googleSignInService.syncPhotosToDrive();
+                googleSignInService.syncPhotosToDrive(authResultLauncher); // Pass authResultLauncher
                 Toast.makeText(getContext(), "Starting photo sync...", Toast.LENGTH_LONG).show();
                 return true;
             });
@@ -152,19 +151,13 @@ public class SettingsFragment extends PreferenceFragmentCompat {
         Preference logout = findPreference("logout");
         if (logout != null) {
             logout.setOnPreferenceClickListener(preference -> {
-                SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
-                SharedPreferences.Editor editor = prefs.edit();
-
-                editor.putBoolean("is_logged_in", false);
-                editor.apply();
-
+                googleSignInService.signOut(); // Use GoogleSignInService's signOut method
                 updateLoginStatus(false);
                 Toast.makeText(getContext(), "Logged out successfully", Toast.LENGTH_LONG).show();
                 return true;
             });
         }
 
-        // Initialize login status and sync button state
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(requireContext());
         boolean isLoggedIn = prefs.getBoolean("is_logged_in", false);
         updateLoginStatus(isLoggedIn);
@@ -224,7 +217,6 @@ public class SettingsFragment extends PreferenceFragmentCompat {
         AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
         builder.setTitle("Thiết lập mật khẩu album ẩn");
 
-        // Inflate custom layout
         View view = getLayoutInflater().inflate(R.layout.dialog_input, null);
         EditText oldPasswordInput = view.findViewById(R.id.edit_text);
         oldPasswordInput.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
